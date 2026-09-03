@@ -5,3 +5,4 @@ eventlet
 gunicorn==21.2.0
 python-dotenv
 Pillow
+Flask-SQLAlchemy==3.1.1
