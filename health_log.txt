@@ -1,0 +1,13 @@
+
+09-02 04:29:26.719 15365 15365 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 04:29:30.904 15365 15365 D FlutterGeolocator: Creating service.
+09-02 04:29:30.909 15365 15365 D FlutterGeolocator: Binding to location service.
+09-02 04:29:31.746 15365 15365 D FlutterGeolocator: Geolocator foreground service connect
+ed
+09-02 04:29:31.747 15365 15365 D FlutterGeolocator: Initializing Geolocator services
+09-02 04:29:31.747 15365 15365 D FlutterGeolocator: Flutter engine connected. Connected e
+ngine count 1
+09-02 04:29:37.874 15365 15365 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 04:29:38.023 15365 15365 D FlutterJNI: Sending viewport metrics to the engine.
+
+

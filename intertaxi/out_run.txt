@@ -1,0 +1,57 @@
+Launching lib\main.dart on sdk gphone64 x86 64 in debug mode...
+Running Gradle task 'assembleDebug'...                          
+Running Gradle task 'assembleDebug'...                            325,0s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          14,1s
+I/FlutterActivityAndFragmentDelegate(14605): If you are attempting to set --enable-dart-profiling via Intent extras to launch a Flutter component outside of using the Flutter CLI, note that support for setting engine flags on Android via Intent will soon be dropped; see https://github.com/flutter/flutter/issues/180686 for more information on this breaking change. To migrate, set --enable-dart-profiling or any other flags specified via Intent extras on the command line instead or see https://github.com/flutter/flutter/blob/main/docs/engine/Flutter-Android-Engine-Flags.md for alternative methods.
+D/FlutterJNI(14605): Beginning load of flutter...
+D/FlutterJNI(14605): flutter (null) was loaded normally!
+I/flutter (14605): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+I/TextToSpeech(14605): Sucessfully bound to com.google.android.tts
+D/FlutterGeolocator(14605): Attaching Geolocator to activity
+W/intertaxi.clone(14605): Accessing hidden method Landroid/view/accessibility/AccessibilityNodeInfo;->getSourceNodeId()J (unsupported,test-api, reflection, allowed)
+W/intertaxi.clone(14605): Accessing hidden method Landroid/view/accessibility/AccessibilityRecord;->getSourceNodeId()J (unsupported, reflection, allowed)
+W/intertaxi.clone(14605): Accessing hidden field Landroid/view/accessibility/AccessibilityNodeInfo;->mChildNodeIds:Landroid/util/LongArray; (unsupported, reflection, allowed)
+W/intertaxi.clone(14605): Accessing hidden method Landroid/util/LongArray;->get(I)J (unsupported, reflection, allowed)
+D/FlutterRenderer(14605): Width is zero. 0,0
+D/CompatibilityChangeReporter(14605): Compat change id reported: 237531167; UID 10174; state: DISABLED
+W/Parcel  (14605): Expecting binder but got null!
+I/intertaxi.clone(14605): Background concurrent copying GC freed 25433(1687KB) AllocSpace objects, 5(100KB) LOS objects, 49% free, 2610KB/5221KB, paused 11.892ms,442us total 659.007ms
+I/Choreographer(14605): Skipped 1754 frames!  The application may be doing too much work on its main thread.
+I/TextToSpeech(14605): Connected to TTS engine
+I/TextToSpeech(14605): Setting up the connection to TTS engine...
+Syncing files to device sdk gphone64 x86 64...                  
+D/FlutterRenderer(14605): Width is zero. 0,0
+D/FlutterJNI(14605): Sending viewport metrics to the engine.
+D/HostConnection(14605): HostComposition ext ANDROID_EMU_CHECKSUM_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_native_sync_v3 ANDROID_EMU_native_sync_v4 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_vulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memory_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 ANDROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma ANDROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object GL_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_version_3_0 
+W/OpenGLRenderer(14605): Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+W/OpenGLRenderer(14605): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+D/EGL_emulation(14605): eglCreateContext: 0x736714536810: maj 3 min 0 rcv 3
+D/EGL_emulation(14605): eglMakeCurrent: 0x736714536810: ver 3 0 (tinfo 0x736933c0d180) (first time)
+I/Gralloc4(14605): mapper 4.x is not supported
+W/Gralloc4(14605): allocator 4.x is not supported
+D/HostConnection(14605): HostComposition ext ANDROID_EMU_CHECKSUM_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_native_sync_v3 ANDROID_EMU_native_sync_v4 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_vulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memory_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 ANDROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma ANDROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object GL_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_version_3_0 
+E/OpenGLRenderer(14605): Unable to match the desired swap behavior.
+Syncing files to device sdk gphone64 x86 64...                      4,1s
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on sdk gphone64 x86 64 is available at: http://127.0.0.1:53174/s0kLutsvAwk=/
+The Flutter DevTools debugger and profiler on sdk gphone64 x86 64 is available at: http://127.0.0.1:53174/s0kLutsvAwk=/devtools/?uri=ws://127.0.0.1:53174/s0kLutsvAwk=/ws
+D/FlutterGeolocator(14605): Creating service.
+D/FlutterGeolocator(14605): Binding to location service.
+W/intertaxi.clone(14605): Suspending all threads took: 8.200ms
+I/intertaxi.clone(14605): Background young concurrent copying GC freed 34799(1767KB) AllocSpace objects, 0(0B) LOS objects, 4% free, 5007KB/5221KB, paused 15.240ms,8.464ms total 189.097ms
+I/intertaxi.clone(14605): Background concurrent copying GC freed 79505(3741KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 2849KB/5699KB, paused 3.795ms,255us total 219.299ms
+I/Choreographer(14605): Skipped 481 frames!  The application may be doing too much work on its main thread.
+D/FlutterGeolocator(14605): Geolocator foreground service connected
+D/FlutterGeolocator(14605): Initializing Geolocator services
+D/FlutterGeolocator(14605): Flutter engine connected. Connected engine count 1
+D/ProfileInstaller(14605): Installing profile for com.intertaxi.intertaxi.clone
+Lost connection to device.

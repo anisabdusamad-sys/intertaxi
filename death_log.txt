@@ -1,0 +1,84 @@
+
+09-02 04:12:28.202 14605 14699 D HostConnection: HostComposition ext ANDROID_EMU_CHECKSUM
+_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_native_sync_v3 ANDROID_EMU_native_sync_
+v4 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_
+host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_v
+ulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID
+_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memor
+y_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 AN
+DROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID
+_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma AND
+ROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object G
+L_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_ver
+sion_3_0 
+09-02 04:12:28.202 14605 14699 W OpenGLRenderer: Failed to choose config with EGL_SWAP_BE
+HAVIOR_PRESERVED, retrying without...
+09-02 04:12:28.209 14605 14699 W OpenGLRenderer: Failed to initialize 101010-2 format, er
+ror = EGL_SUCCESS
+09-02 04:12:28.281 14605 14699 D EGL_emulation: eglCreateContext: 0x736714536810: maj 3 m
+in 0 rcv 3
+09-02 04:12:28.314 14605 14699 D EGL_emulation: eglMakeCurrent: 0x736714536810: ver 3 0 (
+tinfo 0x736933c0d180) (first time)
+09-02 04:12:28.333 14605 14866 I Gralloc4: mapper 4.x is not supported
+09-02 04:12:28.555 14605 14866 W Gralloc4: allocator 4.x is not supported
+09-02 04:12:28.701 14605 14866 D HostConnection: HostComposition ext ANDROID_EMU_CHECKSUM
+_HELPER_v1 ANDROID_EMU_native_sync_v2 ANDROID_EMU_native_sync_v3 ANDROID_EMU_native_sync_
+v4 ANDROID_EMU_dma_v1 ANDROID_EMU_direct_mem ANDROID_EMU_host_composition_v1 ANDROID_EMU_
+host_composition_v2 ANDROID_EMU_vulkan ANDROID_EMU_deferred_vulkan_commands ANDROID_EMU_v
+ulkan_null_optional_strings ANDROID_EMU_vulkan_create_resources_with_requirements ANDROID
+_EMU_YUV_Cache ANDROID_EMU_vulkan_ignored_handles ANDROID_EMU_has_shared_slots_host_memor
+y_allocator ANDROID_EMU_vulkan_free_memory_sync ANDROID_EMU_vulkan_shader_float16_int8 AN
+DROID_EMU_vulkan_async_queue_submit ANDROID_EMU_vulkan_queue_submit_with_commands ANDROID
+_EMU_sync_buffer_data ANDROID_EMU_vulkan_async_qsri ANDROID_EMU_read_color_buffer_dma AND
+ROID_EMU_hwc_color_transform GL_OES_EGL_image_external_essl3 GL_OES_vertex_array_object G
+L_KHR_texture_compression_astc_ldr ANDROID_EMU_host_side_tracing ANDROID_EMU_gles_max_ver
+sion_3_0 
+09-02 04:12:28.740 14605 14699 E OpenGLRenderer: Unable to match the desired swap behavio
+r.
+09-02 04:12:34.178 14605 14605 D FlutterGeolocator: Creating service.
+09-02 04:12:34.187 14605 14605 D FlutterGeolocator: Binding to location service.
+09-02 04:12:35.813 14605 14632 W intertaxi.clone: Suspending all threads took: 8.200ms
+09-02 04:12:35.826 14605 14632 I intertaxi.clone: Background young concurrent copying GC 
+freed 34799(1767KB) AllocSpace objects, 0(0B) LOS objects, 4% free, 5007KB/5221KB, paused
+ 15.240ms,8.464ms total 189.097ms
+09-02 04:12:36.046 14605 14632 I intertaxi.clone: Background concurrent copying GC freed 
+79505(3741KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 2849KB/5699KB, paused 3.79
+5ms,255us total 219.299ms
+09-02 04:12:36.089 14605 14605 I Choreographer: Skipped 481 frames!  The application may 
+be doing too much work on its main thread.
+09-02 04:12:36.098 14605 14605 D FlutterGeolocator: Geolocator foreground service connect
+ed
+09-02 04:12:36.099 14605 14605 D FlutterGeolocator: Initializing Geolocator services
+09-02 04:12:36.099 14605 14605 D FlutterGeolocator: Flutter engine connected. Connected e
+ngine count 1
+09-02 04:12:36.143 14605 14950 D ProfileInstaller: Installing profile for com.intertaxi.i
+ntertaxi.clone
+09-02 04:12:36.702  7006  7118 W InputDispatcher: Not sending touch gesture to 9b34c44 Ac
+tivityRecordInputSink com.intertaxi.intertaxi.clone/com.intertaxi.intertaxi.MainActivity 
+because it is not responsive
+09-02 04:12:40.397  7006  7118 W InputDispatcher: Not sending touch gesture to 9b34c44 Ac
+tivityRecordInputSink com.intertaxi.intertaxi.clone/com.intertaxi.intertaxi.MainActivity 
+because it is not responsive
+09-02 04:12:42.801  7006  7430 W InputManager-JNI: Input channel object '3244e74 Splash S
+creen com.intertaxi.intertaxi.clone (client)' was disposed without first being removed wi
+th the input manager!
+09-02 04:12:43.343  7006  7028 W ActivityTaskManager: Activity top resumed state loss tim
+eout for ActivityRecord{bff03f3 u0 com.intertaxi.intertaxi.clone/com.intertaxi.intertaxi.
+MainActivity} t53}
+09-02 04:12:44.067  7006  7026 W ActivityTaskManager: getAssistContextExtras failed: time
+out retrieving from ActivityRecord{bff03f3 u0 com.intertaxi.intertaxi.clone/com.intertaxi
+.intertaxi.MainActivity} t53}
+09-02 04:12:44.835  7006  7028 I ActivityManager: Killing 14605:com.intertaxi.intertaxi.c
+lone/u0a174 (adj 905): remove task
+09-02 04:12:45.303  7006 10979 I WindowManager: WIN DEATH: Window{114f04d u0 com.intertax
+i.intertaxi.clone/com.intertaxi.intertaxi.MainActivity}
+09-02 04:12:45.305  7006 10979 W InputManager-JNI: Input channel object '114f04d com.inte
+rtaxi.intertaxi.clone/com.intertaxi.intertaxi.MainActivity (client)' was disposed without
+ first being removed with the input manager!
+09-02 04:12:45.307  6890  6890 I Zygote  : Process 14605 exited due to signal 9 (Killed)
+09-02 04:12:45.359  7006  7047 I libprocessgroup: Successfully killed process cgroup uid 
+10174 pid 14605 in 312ms
+09-02 04:12:45.406  7006  7028 W ActivityManager: setHasOverlayUi called on unknown pid: 
+14605
+
+
