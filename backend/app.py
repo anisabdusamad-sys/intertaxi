@@ -18,10 +18,16 @@ from models import db, Trip
 # App & DB setup
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///intertaxi.db'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'intertaxi.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# Роҳи асосии сервер, то дар браузер хатогӣ надиҳад
+@app.route('/')
+def home():
+    return {"status": "online", "message": "InterTaxi Backend is running!"}, 200
 
 socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
 
