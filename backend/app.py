@@ -8,8 +8,11 @@ Run with:
     python app.py
 """
 
+import eventlet
+eventlet.monkey_patch()
 import os
 import logging
+import uuid
 from flask import Flask, request, render_template_string
 from flask_socketio import SocketIO, emit
 from models import db, Trip
@@ -19,10 +22,32 @@ from models import db, Trip
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'intertaxi.db')
+
+# Prefer DATABASE_URL (e.g. Render PostgreSQL) so data survives redeploys on
+# the ephemeral Render filesystem; fall back to a local SQLite file.
+database_url = os.environ.get('DATABASE_URL', '').strip()
+if database_url.startswith('postgres://'):
+    # Older SQLAlchemy versions reject the `postgres://` scheme.
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or (
+    'sqlite:///' + os.path.join(basedir, 'intertaxi.db')
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+
+def create_tables():
+    """Create tables if they do not exist (idempotent).
+
+    Runs at import time so it also executes under gunicorn (`app:app`),
+    not only via `python app.py`.
+    """
+    with app.app_context():
+        db.create_all()
+
+
+create_tables()
 
 # Роҳи асосии сервер, то дар браузер хатогӣ надиҳад
 @app.route('/')
@@ -186,6 +211,15 @@ def book_trip_rest(trip_id):
     return {'trip': trip.to_dict()}, 200
 
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Health check endpoint for Render / uptime monitors."""
+    return {
+        'status': 'ok',
+        'active_trips': Trip.query.filter_by(status='active').count(),
+    }, 200
+
+
 # ---------------------------------------------------------------------------
 # Socket.IO events
 # ---------------------------------------------------------------------------
@@ -296,19 +330,44 @@ def handle_book_trip(data):
 
 
 # ---------------------------------------------------------------------------
+# Legacy order events (kept so the older order-based screens keep working)
+# ---------------------------------------------------------------------------
+@socketio.on('new_order')
+def handle_new_order(data):
+    """Broadcast a passenger ride request to all drivers."""
+    if not isinstance(data, dict):
+        emit('error', {'message': 'Invalid payload — expected JSON object'})
+        return
+    order = dict(data)
+    if not order.get('order_id'):
+        order['order_id'] = str(uuid.uuid4())
+    socketio.emit('new_order', order)
+
+
+@socketio.on('accept_order')
+def handle_accept_order(data):
+    """Broadcast that a driver accepted an order."""
+    if isinstance(data, dict):
+        socketio.emit('accept_order', dict(data))
+
+
+@socketio.on('update_location')
+def handle_update_location(data):
+    """Relay driver GPS updates to everyone else (location streams)."""
+    if isinstance(data, dict):
+        socketio.emit('update_location', dict(data), skip_sid=request.sid)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        logger.info('Database tables ensured.')
-        
     print('\n' + '='*60)
-    print('  🚗 InterTaxi Flask Server Started!')
-    print('  📊 Web UI:     http://localhost:5000')
-    print('  📡 API:       http://localhost:5000/api/trips')
-    print('  🔌 Socket.IO: http://localhost:5000')
+    print('  InterTaxi Flask Server Started!')
+    print('  Web UI:     http://localhost:5000')
+    print('  API:       http://localhost:5000/api/trips')
+    print('  Socket.IO: http://localhost:5000')
     print('='*60 + '\n')
-    
+
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
