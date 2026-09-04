@@ -202,7 +202,9 @@ class _SocketPassengerScreenState extends State<SocketPassengerScreen> {
         children: [
           _buildSearch(),
           if (!_isConnected) _buildBanner(),
-          Expanded(child: _trips.isEmpty ? _buildEmpty() : _buildList()),
+          Expanded(
+            child: _visibleTrips.isEmpty ? _buildEmpty() : _buildList(),
+          ),
         ],
       ),
     );
@@ -354,11 +356,35 @@ class _SocketPassengerScreenState extends State<SocketPassengerScreen> {
   }
 
   Widget _buildList() {
+    final visible = _visibleTrips;
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _trips.length,
-      itemBuilder: (_, i) => _tripCard(_trips[i]),
+      itemCount: visible.length,
+      itemBuilder: (_, i) => _tripCard(visible[i]),
     );
+  }
+
+  /// Trips displayed on screen: ONLY the trips whose `from_location` AND
+  /// `to_location` PRECISELY match the current search fields
+  /// (trimmed, case-insensitive).
+  ///
+  /// The server already filters strictly (`GET /api/trips?from=...&to=...`
+  /// uses `ilike`), but `new_trip` broadcasts and offline REST loads are
+  /// double-checked here so a trip for a DIFFERENT route (e.g.
+  /// "Кулоб -> Душанбе" while searching "Кулоб -> Восе") can never appear
+  /// in the passenger's list.
+  List<Map<String, dynamic>> get _visibleTrips {
+    final f = _fromCtrl.text.trim().toLowerCase();
+    final t = _toCtrl.text.trim().toLowerCase();
+    if (f.isEmpty && t.isEmpty) return List.unmodifiable(_trips);
+    return _trips.where((trip) {
+      final tFrom =
+          trip['from_location']?.toString().trim().toLowerCase() ?? '';
+      final tTo = trip['to_location']?.toString().trim().toLowerCase() ?? '';
+      if (f.isNotEmpty && tFrom != f) return false;
+      if (t.isNotEmpty && tTo != t) return false;
+      return true;
+    }).toList();
   }
 
   /// Premium compact, flat, modern trip card.

@@ -121,16 +121,23 @@ class ApiService {
     return const [];
   }
 
-  /// Deletes a trip on the backend via REST. Used as a fallback when the
-  /// Socket.IO connection is unavailable. Returns `true` when the server
-  /// confirmed the deletion (204/200), `false` otherwise.
+  /// Deletes a trip on the backend via REST: `http.delete('$base/api/trips/$tripId')`.
+  ///
+  /// This is the PRIMARY delete path used when the driver taps delete — it
+  /// guarantees the row is removed from the server database (Render), and
+  /// the server then broadcasts `trip_deleted` to every connected client.
+  /// Returns `true` when the server confirmed the deletion (200/204) or
+  /// reports the trip as already gone (404) — both mean the server DB is in
+  /// sync. Returns `false` only when the server could not be reached.
   static Future<bool> deleteTrip(String tripId) async {
     try {
       final base = await resolveBaseUrl();
       final response = await http
           .delete(Uri.parse('$base/api/trips/$tripId'))
-          .timeout(const Duration(seconds: 5));
-      return response.statusCode == 200 || response.statusCode == 204;
+          .timeout(const Duration(seconds: 10));
+      return response.statusCode == 200 ||
+          response.statusCode == 204 ||
+          response.statusCode == 404;
     } catch (_) {
       return false;
     }

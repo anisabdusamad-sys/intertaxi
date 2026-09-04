@@ -325,9 +325,15 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
     );
   }
 
-  /// Asks the server to delete one of the driver's own trips. Primary path:
-  /// Socket.IO `delete_trip` (server broadcasts `trip_deleted` to everyone).
-  /// Fallback: REST `DELETE /api/trips/<id>`.
+  /// Asks the server to delete one of the driver's own trips.
+  ///
+  /// PRIMARY path: REST `http.delete('$base/api/trips/<id>')` — this always
+  /// hits the server so the row is REALLY removed from the database (Render).
+  /// The server then broadcasts `trip_deleted` to every connected client,
+  /// which also removes the row from this driver's own list in real time.
+  /// FALLBACK: Socket.IO `delete_trip` when HTTP is unreachable.
+  /// The local list is only updated AFTER the server confirms, so the app
+  /// can never drift out of sync with the server.
   Future<void> _deleteTrip(Map<String, dynamic> t) async {
     final id = t['id']?.toString() ?? '';
     if (id.isEmpty || id.startsWith('-')) return; // offline placeholder row
@@ -356,19 +362,45 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final sent = SocketService.instance.deleteTrip(id);
-    if (!sent) {
-      final ok = await ApiService.deleteTrip(id);
+    // 1) ALWAYS send the HTTP DELETE to the server first. This guarantees
+    //    the trip is permanently deleted from the server database.
+    final ok = await ApiService.deleteTrip(id);
+    if (!mounted) return;
+
+    if (ok) {
+      // Server confirmed (deleted now, or already gone). Sync the local
+      // list immediately — the `trip_deleted` broadcast usually does this
+      // first, this is just a safety net.
+      setState(() {
+        _myTrips.removeWhere((x) => x['id']?.toString() == id);
+      });
+      return;
+    }
+
+    // 2) HTTP failed (server unreachable) — fall back to Socket.IO.
+    final sent = SocketService.instance.deleteTrip(id, ack: (resp) {
+      final respOk = resp is Map && resp['ok'] == true;
       if (!mounted) return;
-      if (!ok) {
+      if (respOk) {
+        setState(() {
+          _myTrips.removeWhere((x) => x['id']?.toString() == id);
+        });
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Нест карда нашуд (delete failed)'),
             backgroundColor: Colors.red,
           ),
         );
-        return;
       }
+    });
+    if (!sent && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Сервер дастрас нест (server unreachable)'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

@@ -108,4 +108,51 @@ broadcast = [e for e in events2 if e["name"] == "trip_deleted"]
 assert broadcast and broadcast[0]["args"] == [{"id": trips[0]["id"]}], events2
 print("trip_deleted reached the 2nd connected client:", broadcast[0]["args"])
 
+# 9) STRICT route filtering via GET /api/trips?from=...&to=... (ilike):
+#    only trips whose from AND to match are returned — trips for another
+#    destination must NOT appear.
+client.post(
+    "/api/trips",
+    json={
+        "driver_id": "d4",
+        "driver_name": "Driver 4",
+        "driver_phone": "992333333333",
+        "from_location": "Кулоб",
+        "to_location": "Восеъ",
+        "price": 40,
+        "available_seats": 3,
+    },
+)
+client.post(
+    "/api/trips",
+    json={
+        "driver_id": "d5",
+        "driver_name": "Driver 5",
+        "driver_phone": "992444444444",
+        "from_location": "Кулоб",
+        "to_location": "Душанбе",
+        "price": 120,
+        "available_seats": 2,
+    },
+)
+r = client.get("/api/trips?from=Кулоб&to=Восеъ")
+filtered = r.get_json()["trips"]
+assert r.status_code == 200, r.status_code
+assert all(t["from_location"].lower() == "кулоб" for t in filtered), filtered
+assert all(t["to_location"].lower() == "восеъ" for t in filtered), filtered
+assert len(filtered) == 1, filtered
+# case-insensitive (ilike) check — fully effective on PostgreSQL (production);
+# local SQLite only folds ASCII, so we assert the exact-case query works too.
+r = client.get("/api/trips?from=Кулоб&to=Восеъ")
+assert len(r.get_json()["trips"]) == 1, r.get_json()
+print("GET /api/trips?from=Кулоб&to=Восеъ ->", [t["to_location"] for t in filtered])
+
+# 10) DELETE /api/trips/<string:trip_id> permanently removes the row
+#     (verify it is really gone from the DB, not just hidden).
+vose_trip = filtered[0]
+r = client.delete(f"/api/trips/{vose_trip['id']}")
+assert r.status_code == 200, r.status_code
+assert client.get("/api/trips?from=Кулоб&to=Восеъ").get_json()["trips"] == []
+print("DELETE /api/trips/%s (string path) -> trip permanently removed" % vose_trip["id"])
+
 print("ALL BACKEND TESTS PASSED")

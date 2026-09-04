@@ -2563,8 +2563,9 @@ bool _isSearching = false;
   ///    never displays announcements for another route.
 
   /// 2. Locally persisted announcements are merged in as a fallback (useful
-  ///    while the backend is offline), keeping only rides that still have
-  ///    free seats and cover the selected segment.
+  ///    while the backend is offline), keeping ONLY rides whose from AND to
+  ///    locations PRECISELY match the searched route and still have free
+  ///    seats.
 
   /// Results are sorted: exact matches first, then by departure time.
 
@@ -2632,7 +2633,9 @@ bool _isSearching = false;
 
 
 
-      // 2) Local announcements as an offline fallback.
+      // 2) Local announcements as an offline fallback. Only trips whose
+      //    from AND to PRECISELY match the search route are kept — an
+      //    announcement for a different destination must never appear.
 
       final orders = await models.loadOrders();
 
@@ -2644,7 +2647,7 @@ bool _isSearching = false;
 
         if (ride.availableSeats > 0 &&
 
-            ride.coversSegment(from, to) &&
+            ride.isExactMatch(from, to) &&
 
             seenIds.add(ride.id)) {
 

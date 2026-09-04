@@ -134,10 +134,13 @@ def get_trips():
     query = Trip.query.filter(Trip.status == "active")
     from_loc = request.args.get("from", "").strip()
     to_loc = request.args.get("to", "").strip()
+    # STRICT route filtering with `ilike` (case-insensitive exact match):
+    # a passenger searching "Кулоб -> Восе" gets ONLY trips whose
+    # from_location AND to_location match — never trips for another route.
     if from_loc:
-        query = query.filter(Trip.from_location == from_loc)
+        query = query.filter(Trip.from_location.ilike(from_loc))
     if to_loc:
-        query = query.filter(Trip.to_location == to_loc)
+        query = query.filter(Trip.to_location.ilike(to_loc))
     trips = query.order_by(Trip.created_at.desc()).all()
     return jsonify({"trips": [t.to_dict() for t in trips]})
 
@@ -166,10 +169,16 @@ def create_trip():
     return jsonify({"ok": True, "trip": trip.to_dict()}), 201
 
 
-@app.route("/api/trips/<int:trip_id>", methods=["DELETE"])
-def delete_trip_rest(trip_id: int):
-    """Deletes the trip from the database and broadcasts `trip_deleted`
-    with {"id": trip_id} to all connected clients."""
+@app.route("/api/trips/<string:trip_id>", methods=["DELETE"])
+def delete_trip_rest(trip_id: str):
+    """Deletes the trip PERMANENTLY from the server database and broadcasts
+    `trip_deleted` to ALL connected clients.
+
+    Flow: `_delete_trip_by_id` runs `db.session.delete(trip)` +
+    `db.session.commit()`, then `socketio.emit('trip_deleted', {'id': ...})`
+    fires to every passenger/driver so the trip instantly disappears from
+    all client lists and never reappears on refresh.
+    """
     deleted = _delete_trip_by_id(trip_id)
     if not deleted:
         return jsonify({"ok": False, "error": "Trip not found"}), 404
@@ -218,10 +227,11 @@ def handle_get_trips(data):
     query = Trip.query.filter(Trip.status == "active")
     from_loc = str(data.get("from", "")).strip()
     to_loc = str(data.get("to", "")).strip()
+    # STRICT route filtering with `ilike` (same as the REST endpoint).
     if from_loc:
-        query = query.filter(Trip.from_location == from_loc)
+        query = query.filter(Trip.from_location.ilike(from_loc))
     if to_loc:
-        query = query.filter(Trip.to_location == to_loc)
+        query = query.filter(Trip.to_location.ilike(to_loc))
     trips = query.order_by(Trip.created_at.desc()).all()
     emit("trips_list", {"trips": [t.to_dict() for t in trips]})
 
