@@ -17,28 +17,39 @@ class SocketService {
 
   io.Socket? _socket;
   bool _isConnected = false;
+  Timer? _connectTimeout;
 
   // Controllers for broadcasting events to listeners
-  final _newOrderController = StreamController<Map<String, dynamic>>.broadcast();
-  final _orderAcceptedController = StreamController<Map<String, dynamic>>.broadcast();
-  final _locationUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+  final _newOrderController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _orderAcceptedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _locationUpdateController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _connectionStatusController = StreamController<bool>.broadcast();
 
   // Trip-specific controllers
   final _newTripController = StreamController<Map<String, dynamic>>.broadcast();
-  final _tripsListController = StreamController<List<Map<String, dynamic>>>.broadcast();
-  final _bookingConfirmedController = StreamController<Map<String, dynamic>>.broadcast();
-  final _tripUpdatedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _tripsListController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
+  final _bookingConfirmedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _tripUpdatedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _tripDeletedController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
   /// Stream of new orders broadcast from the server (for drivers).
   Stream<Map<String, dynamic>> get onNewOrder => _newOrderController.stream;
 
   /// Stream of order accepted events (for passengers).
-  Stream<Map<String, dynamic>> get onOrderAccepted => _orderAcceptedController.stream;
+  Stream<Map<String, dynamic>> get onOrderAccepted =>
+      _orderAcceptedController.stream;
 
   /// Stream of driver GPS location updates (for passengers tracking a driver).
-  Stream<Map<String, dynamic>> get onLocationUpdate => _locationUpdateController.stream;
+  Stream<Map<String, dynamic>> get onLocationUpdate =>
+      _locationUpdateController.stream;
 
   /// Stream of connection status changes (true = connected, false = disconnected).
   Stream<bool> get onConnectionStatus => _connectionStatusController.stream;
@@ -47,13 +58,22 @@ class SocketService {
   Stream<Map<String, dynamic>> get onNewTrip => _newTripController.stream;
 
   /// Stream of trips list received from the server (response to get_trips or on connect).
-  Stream<List<Map<String, dynamic>>> get onTripsList => _tripsListController.stream;
+  Stream<List<Map<String, dynamic>>> get onTripsList =>
+      _tripsListController.stream;
 
   /// Stream of booking confirmation events (for the passenger who booked).
-  Stream<Map<String, dynamic>> get onBookingConfirmed => _bookingConfirmedController.stream;
+  Stream<Map<String, dynamic>> get onBookingConfirmed =>
+      _bookingConfirmedController.stream;
 
   /// Stream of trip update events (broadcast when a trip is booked / status changes).
-  Stream<Map<String, dynamic>> get onTripUpdated => _tripUpdatedController.stream;
+  Stream<Map<String, dynamic>> get onTripUpdated =>
+      _tripUpdatedController.stream;
+
+  /// Stream of trip deletion events — `{"id": <trip_id>}` — broadcast when any
+  /// driver (or the server) removes a trip. Passengers and drivers should
+  /// remove the matching trip from their lists instantly.
+  Stream<Map<String, dynamic>> get onTripDeleted =>
+      _tripDeletedController.stream;
 
   /// Stream of error messages from the server.
   Stream<String> get onError => _errorController.stream;
@@ -87,14 +107,31 @@ class SocketService {
     _socket = io.io(
       url,
       io.OptionBuilder()
-          .setTransports(['websocket', 'polling'])
+          .setTransports(['websocket'])
+          .disableAutoConnect()
           .enableForceNew()
+          .enableReconnection()
+          .setReconnectionAttempts(10)
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(15000)
           .setQuery({'user_id': userId, 'role': role})
           .build(),
     );
 
     _socket!.connect();
     _registerEventHandlers();
+
+    // Give up on this connection attempt after 30 s so the UI is never left
+    // waiting forever on a cold-starting / unreachable server.
+    _connectTimeout = Timer(const Duration(seconds: 30), () {
+      if (!_isConnected) {
+        debugPrint('[SocketService] Connect timeout after 30s — resetting');
+        _socket?.disconnect();
+        _socket?.dispose();
+        _socket = null;
+        _connectionStatusController.add(false);
+      }
+    });
   }
 
   void _registerEventHandlers() {
@@ -102,6 +139,8 @@ class SocketService {
 
     socket.onConnect((_) {
       _isConnected = true;
+      _connectTimeout?.cancel();
+      _connectTimeout = null;
       _connectionStatusController.add(true);
       debugPrint('[SocketService] Connected — id: ${socket.id}');
     });
@@ -145,7 +184,9 @@ class SocketService {
         _orderAcceptedController.add(data);
       } else if (data is String) {
         try {
-          _orderAcceptedController.add(jsonDecode(data) as Map<String, dynamic>);
+          _orderAcceptedController.add(
+            jsonDecode(data) as Map<String, dynamic>,
+          );
         } catch (_) {
           debugPrint('[SocketService] Failed to parse accept_order data');
         }
@@ -159,7 +200,9 @@ class SocketService {
         _locationUpdateController.add(data);
       } else if (data is String) {
         try {
-          _locationUpdateController.add(jsonDecode(data) as Map<String, dynamic>);
+          _locationUpdateController.add(
+            jsonDecode(data) as Map<String, dynamic>,
+          );
         } catch (_) {
           debugPrint('[SocketService] Failed to parse update_location data');
         }
@@ -219,7 +262,9 @@ class SocketService {
         _bookingConfirmedController.add(data);
       } else if (data is String) {
         try {
-          _bookingConfirmedController.add(jsonDecode(data) as Map<String, dynamic>);
+          _bookingConfirmedController.add(
+            jsonDecode(data) as Map<String, dynamic>,
+          );
         } catch (_) {
           debugPrint('[SocketService] Failed to parse booking_confirmed data');
         }
@@ -236,6 +281,24 @@ class SocketService {
           _tripUpdatedController.add(jsonDecode(data) as Map<String, dynamic>);
         } catch (_) {
           debugPrint('[SocketService] Failed to parse trip_updated data');
+        }
+      }
+    });
+
+    // Trip deleted (broadcast when a driver removes a trip)
+    socket.on('trip_deleted', (data) {
+      debugPrint('[SocketService] trip_deleted received: $data');
+      if (data is Map<String, dynamic>) {
+        _tripDeletedController.add(data);
+      } else if (data is Map) {
+        _tripDeletedController.add(Map<String, dynamic>.from(data));
+      } else if (data is String) {
+        try {
+          _tripDeletedController.add(
+            jsonDecode(data) as Map<String, dynamic>,
+          );
+        } catch (_) {
+          debugPrint('[SocketService] Failed to parse trip_deleted data');
         }
       }
     });
@@ -277,10 +340,7 @@ class SocketService {
       debugPrint('[SocketService] Cannot accept_order — not connected');
       return;
     }
-    final payload = {
-      'order_id': orderId,
-      ...driverData,
-    };
+    final payload = {'order_id': orderId, ...driverData};
     _socket!.emit('accept_order', payload);
     debugPrint('[SocketService] Emitted accept_order: $payload');
   }
@@ -305,13 +365,25 @@ class SocketService {
   }
 
   /// Emits a `post_trip` event so a driver can announce a new trip.
-  void postTrip(Map<String, dynamic> tripData) {
+  ///
+  /// Returns `true` when the event was handed to the socket (i.e. we were
+  /// connected), `false` when the trip could not be sent — callers can then
+  /// fall back to the REST endpoint (`ApiService.postTrip`).
+  ///
+  /// An optional [ack] callback receives the server acknowledgement
+  /// (`{"ok": true, "trip": {...}}` on success).
+  bool postTrip(Map<String, dynamic> tripData, {void Function(dynamic)? ack}) {
     if (!_isConnected || _socket == null) {
       debugPrint('[SocketService] Cannot post_trip — not connected');
-      return;
+      return false;
     }
-    _socket!.emit('post_trip', tripData);
+    if (ack != null) {
+      _socket!.emitWithAck('post_trip', tripData, ack: ack);
+    } else {
+      _socket!.emit('post_trip', tripData);
+    }
     debugPrint('[SocketService] Emitted post_trip: $tripData');
+    return true;
   }
 
   /// Emits a `get_trips` event to request active trips (optionally filtered).
@@ -346,8 +418,30 @@ class SocketService {
     debugPrint('[SocketService] Emitted book_trip: $payload');
   }
 
+  /// Emits a `delete_trip` event so the driver can remove one of their trips.
+  ///
+  /// The server deletes the trip and broadcasts `trip_deleted`
+  /// (`{"id": <trip_id>}`) to all connected users. An optional [ack] callback
+  /// receives the server acknowledgement (`{"ok": true, "id": ...}`).
+  bool deleteTrip(String tripId, {void Function(dynamic)? ack}) {
+    if (!_isConnected || _socket == null) {
+      debugPrint('[SocketService] Cannot delete_trip — not connected');
+      return false;
+    }
+    final payload = {'trip_id': tripId};
+    if (ack != null) {
+      _socket!.emitWithAck('delete_trip', payload, ack: ack);
+    } else {
+      _socket!.emit('delete_trip', payload);
+    }
+    debugPrint('[SocketService] Emitted delete_trip: $payload');
+    return true;
+  }
+
   /// Disconnects from the server and cleans up resources.
   void disconnect() {
+    _connectTimeout?.cancel();
+    _connectTimeout = null;
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
@@ -367,6 +461,7 @@ class SocketService {
     _tripsListController.close();
     _bookingConfirmedController.close();
     _tripUpdatedController.close();
+    _tripDeletedController.close();
     _errorController.close();
   }
 }

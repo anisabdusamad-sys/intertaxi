@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,19 +13,17 @@ class ApiService {
 
   /// Effective server address for the InterTaxi Flask backend.
   ///
-  /// The user can override it (see [setCustomBaseUrl]) so a physical phone
-  /// can point at the PC's LAN IP instead of the emulator-only mapping below.
+  /// The backend is now deployed on Render; this is the default address used
+  /// by every REST and Socket.IO call. The user can still override it (see
+  /// [setCustomBaseUrl]) for local development against a PC-running Flask.
 
-  /// - Android emulator: `10.0.2.2` maps to the host machine's `localhost`.
-  /// - Everything else (web, desktop, iOS simulator): `localhost`.
   static const String _baseUrlPrefsKey = 'backend_url';
   static String? _customBaseUrl;
-  ///   On a physical device this needs the PC's LAN IP — edit here if needed.
+  /// Deployed backend (Render) — used for HTTP and Socket.IO alike.
+  static const String defaultBaseUrl = 'https://intertaxi.onrender.com';
+
   static String _platformDefault() {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5000';
-    }
-    return 'http://localhost:5000';
+    return defaultBaseUrl;
   }
 
   /// Resolves the effective backend address: the user-configured override (if
@@ -42,8 +39,8 @@ class ApiService {
     return _platformDefault();
   }
 
-  /// Saves a custom server address (e.g. `http://192.168.43.59:5000`).
-  /// An empty value resets to the platform default (emulator mapping / localhost).
+  /// Saves a custom server address (e.g. `https://intertaxi.onrender.com`).
+  /// An empty value resets to the deployed default (Render).
   static Future<void> setCustomBaseUrl(String value) async {
     final trimmed = value.trim();
     final prefs = await SharedPreferences.getInstance();
@@ -61,7 +58,7 @@ class ApiService {
   static String _normalizeUrl(String value) {
     var cleaned = value.trim();
     if (!cleaned.contains('://')) {
-      cleaned = 'http://$cleaned';
+      cleaned = 'https://$cleaned';
     }
     while (cleaned.endsWith('/')) {
       cleaned = cleaned.substring(0, cleaned.length - 1);
@@ -87,13 +84,29 @@ class ApiService {
     }
   }
 
-  /// Fetches all active trips from the backend. Returns an empty list on any
+  /// Fetches trips from the backend, optionally filtered by the EXACT route.
+  ///
+  /// When [from] / [to] are provided they are sent as `?from=...&to=...`
+  /// query parameters and the server returns ONLY trips created for that
+  /// exact route (from_location + to_location), so the passenger main screen
+  /// never displays trips for another route. Returns an empty list on any
   /// failure so callers never have to handle exceptions.
-  static Future<List<Map<String, dynamic>>> fetchTrips() async {
+  static Future<List<Map<String, dynamic>>> fetchTrips({
+    String? from,
+    String? to,
+  }) async {
     try {
       final base = await resolveBaseUrl();
+      final f = from?.trim();
+      final t = to?.trim();
+      final uri = Uri.parse('$base/api/trips').replace(
+        queryParameters: {
+          if (f != null && f.isNotEmpty) 'from': f,
+          if (t != null && t.isNotEmpty) 'to': t,
+        },
+      );
       final response = await http
-          .get(Uri.parse('$base/api/trips'))
+          .get(uri)
           .timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -106,5 +119,20 @@ class ApiService {
       // ignore — backend offline
     }
     return const [];
+  }
+
+  /// Deletes a trip on the backend via REST. Used as a fallback when the
+  /// Socket.IO connection is unavailable. Returns `true` when the server
+  /// confirmed the deletion (204/200), `false` otherwise.
+  static Future<bool> deleteTrip(String tripId) async {
+    try {
+      final base = await resolveBaseUrl();
+      final response = await http
+          .delete(Uri.parse('$base/api/trips/$tripId'))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
   }
 }

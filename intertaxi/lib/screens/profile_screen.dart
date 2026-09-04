@@ -155,8 +155,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 5. About App — logo, version (v1.0.0) and description.
   Future<void> _openAbout() => showAboutAppSheet(context: context);
 
-  /// 6. Server — point the app at the Flask backend (needed on physical
-  /// phones where `localhost` refers to the phone itself, not the PC).
+  /// 6. Server — override the backend address (default is the Render
+  /// deployment: https://intertaxi.onrender.com).
   Future<void> _openServerSettings() {
     return Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ServerSettingsScreen()),

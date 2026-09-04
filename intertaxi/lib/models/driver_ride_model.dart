@@ -39,6 +39,54 @@ class DriverRide {
     required this.fullRoutePrice,
   });
 
+  /// Builds a [DriverRide] from a backend trip JSON map (the exact shape
+  /// produced by `Trip.to_dict()` in the Flask backend / socket events).
+  ///
+  /// The route is the exact pair [from_location, to_location] the driver
+  /// announced, so route-based search results map 1:1 to server trips.
+  factory DriverRide.fromMap(Map<String, dynamic> map) {
+    final from = map['from_location']?.toString() ?? '';
+    final to = map['to_location']?.toString() ?? '';
+    final departureRaw = map['departure_time']?.toString() ?? '';
+    DateTime departure;
+    try {
+      departure = DateTime.parse(departureRaw);
+    } on FormatException {
+      departure = DateTime.now();
+    }
+    return DriverRide(
+      id: map['id']?.toString() ?? '',
+      driverName: map['driver_name']?.toString() ?? '',
+      driverPhone: map['driver_phone']?.toString() ?? '',
+      carModel: '',
+      carColor: '',
+      carPlate: '',
+      availableSeats:
+          int.tryParse(map['available_seats']?.toString() ?? '') ?? 0,
+      departureTime: departure,
+      route: [from, to],
+      fullRoutePrice: int.tryParse(map['price']?.toString() ?? '') ?? 0,
+    );
+  }
+
+  /// Serializes back to the backend trip JSON shape so the ride can be
+  /// opened in [TripDetailScreen] (which expects the raw server map).
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'driver_id': driverPhone,
+      'driver_name': driverName,
+      'driver_phone': driverPhone,
+      'from_location': route.isNotEmpty ? route.first : '',
+      'to_location': route.length > 1 ? route.last : '',
+      'price': fullRoutePrice,
+      'available_seats': availableSeats,
+      'departure_time': departureTime.toIso8601String(),
+      'status': availableSeats > 0 ? 'active' : 'booked',
+      'created_at': '',
+    };
+  }
+
   /// True when the driver's route contains BOTH [from] and [to],
   /// and [from] comes before [to] on the route.
   bool coversSegment(String from, String to) {

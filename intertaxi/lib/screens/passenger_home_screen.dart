@@ -26,6 +26,8 @@ import '../models/driver_ride_model.dart';
 
 import '../models/intertaxi_models.dart' as models;
 
+import '../services/api_service.dart';
+
 import '../widgets/city_selection_modal.dart';
 
 import '../widgets/driver_ride_card.dart';
@@ -35,6 +37,8 @@ import 'all_ads_screen.dart';
 import 'profile_screen.dart';
 
 import 'route_screen.dart';
+
+import 'trip_detail_screen.dart';
 
 
 
@@ -2549,17 +2553,20 @@ bool _isSearching = false;
 
 
 
-  /// Runs the route search against the orders saved on this device.
+  /// Runs the route search against the backend AND the orders saved on this
+  /// device.
 
   ///
 
-  /// Every driver announcement created in the app is stored locally
+  /// 1. The server (`GET /api/trips?from=...&to=...`) returns ONLY the trips
+  ///    drivers created for that exact route, so the main passenger screen
+  ///    never displays announcements for another route.
 
-  /// (SharedPreferences), so the search simply loads them, keeps the rides
+  /// 2. Locally persisted announcements are merged in as a fallback (useful
+  ///    while the backend is offline), keeping only rides that still have
+  ///    free seats and cover the selected segment.
 
-  /// that cover the selected route and still have free seats, and sorts
-
-  /// them (exact matches first, then by departure time).
+  /// Results are sorted: exact matches first, then by departure time.
 
   Future<void> _handleSearch() async {
 
@@ -2601,9 +2608,33 @@ bool _isSearching = false;
 
       final to = _toCity!;
 
-      final orders = await models.loadOrders();
-
       final rides = <DriverRide>[];
+
+      final seenIds = <String>{};
+
+
+
+      // 1) Backend trips, filtered server-side by the EXACT route.
+
+      final serverTrips = await ApiService.fetchTrips(from: from, to: to);
+
+      for (final trip in serverTrips) {
+
+        final ride = DriverRide.fromMap(trip);
+
+        if (ride.availableSeats > 0 && seenIds.add(ride.id)) {
+
+          rides.add(ride);
+
+        }
+
+      }
+
+
+
+      // 2) Local announcements as an offline fallback.
+
+      final orders = await models.loadOrders();
 
       for (final order in orders) {
 
@@ -2611,13 +2642,19 @@ bool _isSearching = false;
 
         if (ride == null) continue;
 
-        if (ride.availableSeats > 0 && ride.coversSegment(from, to)) {
+        if (ride.availableSeats > 0 &&
+
+            ride.coversSegment(from, to) &&
+
+            seenIds.add(ride.id)) {
 
           rides.add(ride);
 
         }
 
       }
+
+
 
       rides.sort((a, b) {
 
@@ -2861,7 +2898,23 @@ bool _isSearching = false;
 
                 onTap: () {
 
-                  // TODO: Navigate to booking/details screen for this ride.
+                  Navigator.of(context).push(
+
+                    MaterialPageRoute(
+
+                      builder: (_) => TripDetailScreen(
+
+                        trip: ride.toMap(),
+
+                        passengerName: widget.passengerName,
+
+                        passengerPhone: widget.passengerPhone,
+
+                      ),
+
+                    ),
+
+                  );
 
                 },
 

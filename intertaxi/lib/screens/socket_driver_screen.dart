@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import '../services/socket_service.dart';
 
 class SocketDriverScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
   StreamSubscription<bool>? _connSub;
   StreamSubscription<Map<String, dynamic>>? _newTripSub;
   StreamSubscription<Map<String, dynamic>>? _tripUpdSub;
+  StreamSubscription<Map<String, dynamic>>? _tripDelSub;
   StreamSubscription<String>? _errSub;
 
   @override
@@ -66,6 +68,16 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
       if (i >= 0) setState(() => _myTrips[i] = t);
     });
 
+    // A trip was deleted (by this driver or elsewhere) — keep our list in sync.
+    _tripDelSub = SocketService.instance.onTripDeleted.listen((data) {
+      if (!mounted) return;
+      final id = data['id']?.toString();
+      if (id == null || id.isEmpty) return;
+      setState(() {
+        _myTrips.removeWhere((x) => x['id']?.toString() == id);
+      });
+    });
+
     _errSub = SocketService.instance.onError.listen((msg) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,7 +90,7 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
     SocketService.instance.connect(userId: widget.driverPhone, role: 'driver');
   }
 
-  void _publish() {
+  Future<void> _publish() async {
     if (!_isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not connected'), backgroundColor: Colors.red),
@@ -95,7 +107,7 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
       );
       return;
     }
-    SocketService.instance.postTrip({
+    final payload = {
       'driver_id': widget.driverPhone,
       'driver_name': widget.driverName,
       'driver_phone': widget.driverPhone,
@@ -106,7 +118,37 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
       'departure_time': _dateCtrl.text.isEmpty
           ? DateTime.now().toIso8601String()
           : '${_dateCtrl.text}T${_timeCtrl.text}:00',
-    });
+    };
+
+    // Primary path: real-time Socket.IO emit. The server broadcasts the trip
+    // back on `new_trip`, which the listener below inserts into _myTrips.
+    final sent = SocketService.instance.postTrip(payload);
+
+    // Fallback path: if the socket dropped between the status check and the
+    // emit, push the announcement via REST so it is never lost.
+    if (!sent) {
+      final ok = await ApiService.postTrip(payload);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Serverga ulanib bo\'lmadi (publish failed)'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      // The trip is saved server-side, but no socket broadcast will reach us
+      // while offline — show it in our own list immediately.
+      setState(() {
+        _myTrips.insert(0, {
+          ...payload,
+          'id': -(DateTime.now().millisecondsSinceEpoch),
+          'status': 'active',
+        });
+      });
+    }
+
     _fromCtrl.clear();
     _toCtrl.clear();
     _priceCtrl.clear();
@@ -142,6 +184,7 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
     _connSub?.cancel();
     _newTripSub?.cancel();
     _tripUpdSub?.cancel();
+    _tripDelSub?.cancel();
     _errSub?.cancel();
     _fromCtrl.dispose();
     _toCtrl.dispose();
@@ -282,6 +325,53 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
     );
   }
 
+  /// Asks the server to delete one of the driver's own trips. Primary path:
+  /// Socket.IO `delete_trip` (server broadcasts `trip_deleted` to everyone).
+  /// Fallback: REST `DELETE /api/trips/<id>`.
+  Future<void> _deleteTrip(Map<String, dynamic> t) async {
+    final id = t['id']?.toString() ?? '';
+    if (id.isEmpty || id.startsWith('-')) return; // offline placeholder row
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete trip?'),
+        content: const Text(
+          'Трип нест карда шавад? Мусофирон онро фавран мебинанд.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final sent = SocketService.instance.deleteTrip(id);
+    if (!sent) {
+      final ok = await ApiService.deleteTrip(id);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нест карда нашуд (delete failed)'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+  }
+
   Widget _tripCard(Map<String, dynamic> t) {
     final from = t['from_location'] ?? 'Unknown';
     final to = t['to_location'] ?? 'Unknown';
@@ -309,6 +399,14 @@ class _SocketDriverScreenState extends State<SocketDriverScreen> {
               ),
               const Spacer(),
               Text('$price Somoni', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0066FF))),
+              const SizedBox(width: 4),
+              // Delete this trip (broadcasts trip_deleted to all users)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                tooltip: 'Нест кардан',
+                onPressed: () => _deleteTrip(t),
+              ),
             ]),
             const SizedBox(height: 8),
             Row(children: [const Icon(Icons.my_location, size: 18, color: Colors.green), const SizedBox(width: 8), Text(from)]),

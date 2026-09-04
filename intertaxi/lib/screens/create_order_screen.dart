@@ -174,7 +174,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       await models.saveOrder(order);
 
       // Best-effort sync to the Flask backend (REST) so the announcement
-      // also appears on http://localhost:5000 and for connected passengers.
+      // also appears on https://intertaxi.onrender.com and for connected passengers.
       // Never blocks or crashes the driver flow when the server is offline.
       unawaited(ApiService.postTrip({
         'driver_id': widget.driverPhone,

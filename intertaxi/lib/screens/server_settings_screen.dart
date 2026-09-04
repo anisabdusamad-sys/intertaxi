@@ -5,13 +5,12 @@ import '../services/api_service.dart';
 
 /// Lets the user point the app at the InterTaxi Flask backend.
 ///
-/// Why this exists: `localhost` inside an app running on a physical phone
-/// refers to the phone itself, not the PC running Flask. On the Android
-/// emulator `10.0.2.2` maps to the PC automatically, but a real phone needs
-/// the PC's LAN IP (e.g. `http://192.168.43.59:5000`) with both devices on
-/// the same Wi-Fi / hotspot. The address is stored in SharedPreferences
-/// (key `backend_url`) and used by every REST and Socket.IO call through
-/// [ApiService.resolveBaseUrl].
+/// The backend is deployed on Render at `https://intertaxi.onrender.com` and
+/// that is the default address for every REST and Socket.IO call. This screen
+/// only exists as an override for local development (e.g. pointing the app at
+/// a Flask instance running on a PC: `http://192.168.1.20:5000`). The address
+/// is stored in SharedPreferences (key `backend_url`) and used by every REST
+/// and Socket.IO call through [ApiService.resolveBaseUrl].
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
 
@@ -127,16 +126,16 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               controller: _urlCtrl,
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
-                hintText: 'http://192.168.43.59:5000',
+                hintText: 'https://intertaxi.onrender.com',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Дар телефонҳои воқеӣ localhost ба худи телефон ишора мекунад, '
-              'на ба компютер. Суроғаи LAN-и компютерро ворид кунед '
-              '(мисол: http://192.168.43.59:5000). Дар эмулятор 10.0.2.2 '
-              'ба таври худкор кор мекунад.',
+              'Пешфарз — сервери Render: https://intertaxi.onrender.com. '
+              'Агар хоҳед барои санҷиш сервери локалӣ истифода баред, '
+              'суроғаи онро ворид кунед (мисол: http://192.168.1.20:5000). '
+              'Барои бозгашт ба сервери асосӣ, майдонро холӣ гузоред.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 20),
