@@ -1,0 +1,41 @@
+Analyzing intertaxi...                                          
+
+warning - The value of the local variable 'savedName' isn't used. Try removing the variable or using it - lib\main.dart:123:11 - unused_local_variable
+warning - The value of the local variable 'savedPhone' isn't used. Try removing the variable or using it - lib\main.dart:124:11 - unused_local_variable
+warning - The value of the local variable 'savedRole' isn't used. Try removing the variable or using it - lib\main.dart:125:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:138:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:156:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:171:20 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:182:18 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\main.dart:320:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:356:24 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:590:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:604:22 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\main.dart:2142:7 - avoid_print
+warning - The declaration '_resetProfileAndRestart' isn't referenced. Try removing the declaration of '_resetProfileAndRestart' - lib\main.dart:2146:16 - unused_element
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:2710:7 - use_build_context_synchronously
+warning - The declaration '_buildLicensePlateBox' isn't referenced. Try removing the declaration of '_buildLicensePlateBox' - lib\main.dart:4112:10 - unused_element
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:4217:24 - use_build_context_synchronously
+warning - The declaration '_buildCreateOrderTab' isn't referenced. Try removing the declaration of '_buildCreateOrderTab' - lib\screens\driver_home_screen.dart:243:10 - unused_element
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\home_screen.dart:403:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\home_screen.dart:761:33 - unnecessary_underscores
+warning - The declaration '_speakTripSummary' isn't referenced. Try removing the declaration of '_speakTripSummary' - lib\screens\passenger_home_screen.dart:1330:16 - unused_element
+warning - The declaration '_haversineMeters' isn't referenced. Try removing the declaration of '_haversineMeters' - lib\screens\passenger_home_screen.dart:1422:10 - unused_element
+warning - The declaration '_buildRouteMarkers' isn't referenced. Try removing the declaration of '_buildRouteMarkers' - lib\screens\passenger_home_screen.dart:1760:16 - unused_element
+warning - The declaration '_buildMapHeaderCard' isn't referenced. Try removing the declaration of '_buildMapHeaderCard' - lib\screens\passenger_home_screen.dart:1946:10 - unused_element
+warning - The declaration '_buildRouteStatsCard' isn't referenced. Try removing the declaration of '_buildRouteStatsCard' - lib\screens\passenger_home_screen.dart:2164:10 - unused_element
+warning - The value of the field '_isStartCardExpanded' isn't used. Try removing the field, or using it - lib\screens\passenger_trip_screen.dart:27:8 - unused_field
+warning - The value of the field '_isDestinationCardExpanded' isn't used. Try removing the field, or using it - lib\screens\passenger_trip_screen.dart:28:8 - unused_field
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\passenger_trip_screen.dart:62:9 - avoid_print
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\profile_screen.dart:436:55 - unnecessary_underscores
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\registration_screen.dart:121:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\socket_driver_screen.dart:426:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\socket_driver_screen.dart:426:79 - deprecated_member_use
+   info - Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?' - lib\services\socket_service.dart:361:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?' - lib\services\socket_service.dart:414:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?' - lib\services\socket_service.dart:415:7 - use_null_aware_elements
+warning - The value of the field '_hasValue' isn't used. Try removing the field, or using it - lib\widgets\custom_text_field.dart:45:8 - unused_field
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\widgets\profile_edit_sheet.dart:247:55 - unnecessary_underscores
+warning - The value of the field '_borderAnimation' isn't used. Try removing the field, or using it - lib\widgets\role_selection_card.dart:36:26 - unused_field
+
+37 issues found. (ran in 57.7s)

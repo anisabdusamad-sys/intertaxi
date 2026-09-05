@@ -1,0 +1,11 @@
+﻿
+ProcessId Name     CommandLine                                                                                                                                                                         
+--------- ----     -----------                                                                                                                                                                         
+     9848 cmd.exe  C:\Windows\system32\cmd.exe /d /s /c ""D:\flutter\bin\flutter.bat" "daemon""                                                                                                        
+     1292 dart.exe D:\flutter\bin\cache\dart-sdk\bin\dart.exe language-server --protocol=lsp --client-id=VS-Code --client-version=3.140.0                                                              
+     4760 dart.exe D:\flutter\bin\cache\dart-sdk\bin\dart.exe tooling-daemon --machine                                                                                                                 
+    10288 dart.exe "D:\flutter\bin\cache\dart-sdk\bin\dart.exe"  --packages="D:\flutter\packages\flutter_tools\.dart_tool\package_config.json"  "D:\flutter\bin\cache\flutter_tools.snapshot" "daemon" 
+     2568 dart.exe D:\flutter\bin\cache\dart-sdk\bin\dart.exe devtools --machine --allow-embedding --dtd-uri ws://127.0.0.1:49675/BdqvOOdNTnM=                                                         
+    14576 cmd.exe  C:\Windows\system32\cmd.exe /d /s /c ""C:\Users\Anis\AppData\Local\Android\Sdk\emulator\emulator"  -avd Pixel_7"                                                                    
+
+

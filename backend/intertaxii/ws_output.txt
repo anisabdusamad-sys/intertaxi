@@ -1,0 +1,58 @@
+﻿Analyzing intertaxi...                                          
+
+warning - The value of the local variable 'savedName' isn't used. Try removing the variable or using it - lib\main.dart:123:11 - unused_local_variable
+warning - The value of the local variable 'savedPhone' isn't used. Try removing the variable or using it - lib\main.dart:124:11 - unused_local_variable
+warning - The value of the local variable 'savedRole' isn't used. Try removing the variable or using it - lib\main.dart:125:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:138:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:150:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:161:20 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:172:18 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\main.dart:310:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:346:24 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:571:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:580:22 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\main.dart:2101:7 - avoid_print
+warning - The declaration '_resetProfileAndRestart' isn't referenced. Try removing the declaration of '_resetProfileAndRestart' - lib\main.dart:2105:16 - unused_element
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:2669:7 - use_build_context_synchronously
+warning - The declaration '_buildLicensePlateBox' isn't referenced. Try removing the declaration of '_buildLicensePlateBox' - lib\main.dart:4050:10 - unused_element
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\main.dart:4155:24 - use_build_context_synchronously
+warning - The declaration '_buildCreateOrderTab' isn't referenced. Try removing the declaration of '_buildCreateOrderTab' - lib\screens\driver_home_screen.dart:243:10 - unused_element
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\home_screen.dart:403:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\home_screen.dart:761:33 - unnecessary_underscores
+   info - The private field _isSearching could be 'final'. Try making the field 'final' - lib\screens\passenger_home_screen.dart:223:6 - prefer_final_fields
+warning - The declaration '_speakTripSummary' isn't referenced. Try removing the declaration of '_speakTripSummary' - lib\screens\passenger_home_screen.dart:619:16 - unused_element
+warning - The declaration '_haversineMeters' isn't referenced. Try removing the declaration of '_haversineMeters' - lib\screens\passenger_home_screen.dart:665:10 - unused_element
+warning - The declaration '_buildRouteMarkers' isn't referenced. Try removing the declaration of '_buildRouteMarkers' - lib\screens\passenger_home_screen.dart:856:16 - unused_element
+warning - The declaration '_buildMapHeaderCard' isn't referenced. Try removing the declaration of '_buildMapHeaderCard' - lib\screens\passenger_home_screen.dart:949:10 - unused_element
+warning - The declaration '_buildRouteStatsCard' isn't referenced. Try removing the declaration of '_buildRouteStatsCard' - lib\screens\passenger_home_screen.dart:1058:10 - unused_element
+warning - The declaration '_buildSearchResultsSection' isn't referenced. Try removing the declaration of '_buildSearchResultsSection' - lib\screens\passenger_home_screen.dart:1434:10 - unused_element
+warning - The value of the field '_isStartCardExpanded' isn't used. Try removing the field, or using it - lib\screens\passenger_trip_screen.dart:27:8 - unused_field
+warning - The value of the field '_isDestinationCardExpanded' isn't used. Try removing the field, or using it - lib\screens\passenger_trip_screen.dart:28:8 - unused_field
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\passenger_trip_screen.dart:62:9 - avoid_print
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\screens\profile_screen.dart:421:55 - unnecessary_underscores
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\registration_screen.dart:121:7 - avoid_print
+warning - The value of the field '_hasValue' isn't used. Try removing the field, or using it - lib\widgets\custom_text_field.dart:45:8 - unused_field
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\widgets\profile_edit_sheet.dart:247:55 - unnecessary_underscores
+warning - The value of the field '_borderAnimation' isn't used. Try removing the field, or using it - lib\widgets\role_selection_card.dart:36:26 - unused_field
+  error - Too many positional arguments: 0 expected, but 1 found. Try removing the extra positional arguments, or specifying the name for named arguments - test\passenger_home_screen_performance_test.dart:23:7 - extra_positional_arguments_could_be_named
+  error - Local variable 'progress' can't be referenced before it is declared. Try moving the declaration to before the first use, or renaming the local variable so that it doesn't hide a name from an enclosing scope - test\passenger_home_screen_performance_test.dart:23:14 - referenced_before_declaration
+  error - Expected to find ')' - test\passenger_home_screen_performance_test.dart:23:56 - expected_token
+  error - The property 'remainingSeconds' can't be unconditionally accessed because the receiver can be 'null'. Try making the access conditional (using '?.') or adding a null check to the target ('!') - test\passenger_home_screen_performance_test.dart:24:23 - unchecked_use_of_nullable_value
+
+flutter : 38 issues found. (ran in 8.6s)
+строка:1 знак:58
++ ... s\Desktop\Desktop\intertaxii\intertaxi'; flutter analyze 2>&1 | Out-F ...
++                                              ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (38 issues found. (ran in 8.6s):String) [],  
+   RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Found 4 connected devices:
+  sdk gphone64 x86 64 (mobile) тАв emulator-5554 тАв android-x64    тАв Android 13 (API 33) (emulator)
+  Windows (desktop)            тАв windows       тАв windows-x64    тАв Microsoft Windows [Version 10.0.28000.2525]
+  Chrome (web)                 тАв chrome        тАв web-javascript тАв Google Chrome 152.0.7977.65
+  Edge (web)                   тАв edge          тАв web-javascript тАв Microsoft Edge 151.0.4129.107
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also try increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/ for troubleshooting tips.

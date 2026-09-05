@@ -1,0 +1,8 @@
+﻿
+09-02 01:22:36.294  3038  3038 E AndroidRuntime: FATAL EXCEPTION: main
+09-02 01:22:36.649  1627  1627 E AndroidRuntime: FATAL EXCEPTION: main
+09-02 01:22:37.263   875   875 E AndroidRuntime: FATAL EXCEPTION: main
+09-02 01:22:37.626   805  6816 E AndroidRuntime: FATAL EXCEPTION: NetworkMonitor/102
+09-02 01:40:14.045  7954  7954 E AndroidRuntime: FATAL EXCEPTION: main
+
+

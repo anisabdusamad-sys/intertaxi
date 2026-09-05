@@ -1,0 +1,6 @@
+Analyzing passenger_home_screen.dart...
+
+  error - passenger_home_screen.dart:84:3 - Undefined class 'StreamSubscription'. Try changing the name to the name of an existing class, or creating a class with the name 'StreamSubscription'. - undefined_class
+   info - passenger_home_screen.dart:93:8 - The private field _followUser could be 'final'. Try making the field 'final'. - prefer_final_fields
+
+2 issues found.

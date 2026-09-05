@@ -1,0 +1,44 @@
+﻿
+09-02 01:59:45.774 11234 11234 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 01:59:49.682 11234 11234 D FlutterGeolocator: Creating service.
+09-02 01:59:49.701 11234 11234 D FlutterGeolocator: Binding to location service.
+09-02 01:59:54.510 11234 11234 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 01:59:54.877 11234 11234 D FlutterGeolocator: Geolocator foreground service connect
+ed
+09-02 01:59:54.877 11234 11234 D FlutterGeolocator: Initializing Geolocator services
+09-02 01:59:54.877 11234 11234 D FlutterGeolocator: Flutter engine connected. Connected e
+ngine count 1
+09-02 01:59:56.437 11234 11234 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 04:11:58.978 14605 14605 I FlutterActivityAndFragmentDelegate: If you are attemptin
+g to set --enable-dart-profiling via Intent extras to launch a Flutter component outside 
+of using the Flutter CLI, note that support for setting engine flags on Android via Inten
+t will soon be dropped; see https://github.com/flutter/flutter/issues/180686 for more inf
+ormation on this breaking change. To migrate, set --enable-dart-profiling or any other fl
+ags specified via Intent extras on the command line instead or see https://github.com/flu
+tter/flutter/blob/main/docs/engine/Flutter-Android-Engine-Flags.md for alternative method
+s.
+09-02 04:11:59.198 14605 14745 D FlutterJNI: Beginning load of flutter...
+09-02 04:11:59.597 14605 14745 D FlutterJNI: flutter (null) was loaded normally!
+09-02 04:12:07.439 14605 14747 I ResourceExtractor: Extracted baseline resource assets/fl
+utter_assets/kernel_blob.bin
+09-02 04:12:07.447 14605 14747 I ResourceExtractor: Extracted baseline resource assets/fl
+utter_assets/vm_snapshot_data
+09-02 04:12:08.581 14605 14747 I ResourceExtractor: Extracted baseline resource assets/fl
+utter_assets/isolate_snapshot_data
+09-02 04:12:10.599 14605 14866 I flutter : [IMPORTANT:flutter/shell/platform/android/andr
+oid_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+09-02 04:12:12.057 14605 14873 I flutter : The Dart VM service is listening on http://127
+.0.0.1:45673/u55cQoV5XqE=/
+09-02 04:12:22.030 14605 14605 D FlutterGeolocator: Attaching Geolocator to activity
+09-02 04:12:22.843 14605 14605 D FlutterRenderer: Width is zero. 0,0
+09-02 04:12:28.063 14605 14605 D FlutterRenderer: Width is zero. 0,0
+09-02 04:12:28.149 14605 14605 D FlutterJNI: Sending viewport metrics to the engine.
+09-02 04:12:34.178 14605 14605 D FlutterGeolocator: Creating service.
+09-02 04:12:34.187 14605 14605 D FlutterGeolocator: Binding to location service.
+09-02 04:12:36.098 14605 14605 D FlutterGeolocator: Geolocator foreground service connect
+ed
+09-02 04:12:36.099 14605 14605 D FlutterGeolocator: Initializing Geolocator services
+09-02 04:12:36.099 14605 14605 D FlutterGeolocator: Flutter engine connected. Connected e
+ngine count 1
+
+
