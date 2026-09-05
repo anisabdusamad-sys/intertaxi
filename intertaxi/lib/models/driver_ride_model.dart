@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'intertaxi_models.dart';
+import '../services/api_service.dart';
 
 /// InterTaxi Driver Ride Model
 /// Represents a driver's announced trip with an ordered route (list of stops).
@@ -18,6 +19,7 @@ class DriverRide {
   final String carPlate;
   final int availableSeats;
   final DateTime departureTime;
+  final int durationMinutes;
 
   /// Ordered stops of the trip. [route.first] = origin, [route.last] = final
   /// destination. Intermediate stops make partial-segment matching possible.
@@ -35,6 +37,7 @@ class DriverRide {
     required this.carPlate,
     required this.availableSeats,
     required this.departureTime,
+    this.durationMinutes = 0,
     required this.route,
     required this.fullRoutePrice,
   });
@@ -58,12 +61,17 @@ class DriverRide {
       id: map['id']?.toString() ?? '',
       driverName: map['driver_name']?.toString() ?? '',
       driverPhone: map['driver_phone']?.toString() ?? '',
-      carModel: '',
-      carColor: '',
-      carPlate: '',
+      carModel: [map['car_brand'], map['car_model']]
+          .where((value) => value != null && value.toString().trim().isNotEmpty)
+          .map((value) => value.toString().trim())
+          .join(' '),
+      carColor: map['car_color']?.toString() ?? '',
+      carPlate: map['car_plate']?.toString() ?? '',
       availableSeats:
           int.tryParse(map['available_seats']?.toString() ?? '') ?? 0,
       departureTime: departure,
+      durationMinutes:
+          int.tryParse(map['duration_minutes']?.toString() ?? '') ?? 0,
       route: [from, to],
       fullRoutePrice: int.tryParse(map['price']?.toString() ?? '') ?? 0,
     );
@@ -77,11 +85,15 @@ class DriverRide {
       'driver_id': driverPhone,
       'driver_name': driverName,
       'driver_phone': driverPhone,
+      'car_model': carModel,
+      'car_color': carColor,
+      'car_plate': carPlate,
       'from_location': route.isNotEmpty ? route.first : '',
       'to_location': route.length > 1 ? route.last : '',
       'price': fullRoutePrice,
       'available_seats': availableSeats,
       'departure_time': departureTime.toIso8601String(),
+      'duration_minutes': durationMinutes,
       'status': availableSeats > 0 ? 'active' : 'booked',
       'created_at': '',
     };
@@ -123,11 +135,24 @@ class DriverRide {
     return route.sublist(originIdx, destIdx + 1);
   }
 
-  /// Human-friendly departure time, e.g. "08:45".
+  /// Human-friendly departure date and time, e.g. "08:45 05.09.26".
   String get departureLabel {
+    final day = departureTime.day.toString().padLeft(2, '0');
+    final month = departureTime.month.toString().padLeft(2, '0');
     final h = departureTime.hour.toString().padLeft(2, '0');
     final m = departureTime.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    final year = (departureTime.year % 100).toString().padLeft(2, '0');
+    return '$h:$m $day.$month.$year';
+  }
+
+  /// Human-friendly trip duration based on the canonical minute value.
+  String get durationLabel {
+    if (durationMinutes <= 0) return '—';
+    final hours = durationMinutes ~/ 60;
+    final minutes = durationMinutes % 60;
+    if (hours == 0) return '$minutes дақиқа';
+    if (minutes == 0) return '$hours соат';
+    return '$hours соат $minutes дақиқа';
   }
 
   /// Minutes until departure (clamped at 0 for "departing now").
@@ -157,7 +182,7 @@ class DriverRide {
 class DriverRideRepository {
   DriverRideRepository._();
 
-  /// Reads the persisted driver announcements and returns matching rides.
+  /// Reads backend announcements and returns matching rides.
   ///
   /// Fully asynchronous and non-blocking:
   ///  1. [SharedPreferences] is read through the async platform channel.
@@ -167,6 +192,13 @@ class DriverRideRepository {
     required String from,
     required String to,
   }) async {
+    final backendTrips = await ApiService.fetchTrips(from: from, to: to);
+    final backendRides = backendTrips
+        .map(DriverRide.fromMap)
+        .where((ride) => ride.availableSeats > 0)
+        .toList();
+    if (backendTrips.isNotEmpty) return backendRides;
+
     final prefs = await SharedPreferences.getInstance();
     final rawJson = prefs.getString('saved_orders') ?? '';
 
@@ -258,8 +290,10 @@ DriverRide? orderToRide(Order order) {
     carPlate: order.carPlate,
     availableSeats: order.seats,
     departureTime: departure,
+    durationMinutes: order.durationMinutes > 0
+        ? order.durationMinutes
+        : (int.tryParse(order.duration) ?? 0),
     route: [from, to],
     fullRoutePrice: price,
   );
 }
-

@@ -17,12 +17,14 @@ Endpoints / events:
 """
 
 import os
+import unicodedata
 import uuid
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 
 # ---------------------------------------------------------------------------
 # App & extensions
@@ -66,6 +68,11 @@ class Trip(db.Model):
     price = db.Column(db.Integer, default=0, nullable=False)
     available_seats = db.Column(db.Integer, default=0, nullable=False)
     departure_time = db.Column(db.String(32), default="", nullable=False)
+    duration_minutes = db.Column(db.Integer, default=0, nullable=False)
+    car_brand = db.Column(db.String(80), default="", nullable=False)
+    car_model = db.Column(db.String(80), default="", nullable=False)
+    car_color = db.Column(db.String(40), default="", nullable=False)
+    car_plate = db.Column(db.String(40), default="", nullable=False)
     status = db.Column(db.String(16), default="active", index=True, nullable=False)
     created_at = db.Column(
         db.DateTime,
@@ -85,6 +92,11 @@ class Trip(db.Model):
             "price": self.price,
             "available_seats": self.available_seats,
             "departure_time": self.departure_time,
+            "duration_minutes": self.duration_minutes,
+            "car_brand": self.car_brand,
+            "car_model": self.car_model,
+            "car_color": self.car_color,
+            "car_plate": self.car_plate,
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else "",
         }
@@ -92,6 +104,20 @@ class Trip(db.Model):
 
 with app.app_context():
     db.create_all()
+    existing_columns = {column["name"] for column in inspect(db.engine).get_columns("trips")}
+    new_columns = {
+        "duration_minutes": "INTEGER DEFAULT 0 NOT NULL",
+        "car_brand": "VARCHAR(80) DEFAULT '' NOT NULL",
+        "car_model": "VARCHAR(80) DEFAULT '' NOT NULL",
+        "car_color": "VARCHAR(40) DEFAULT '' NOT NULL",
+        "car_plate": "VARCHAR(40) DEFAULT '' NOT NULL",
+    }
+    for column_name, definition in new_columns.items():
+        if column_name not in existing_columns:
+            db.session.execute(
+                text(f"ALTER TABLE trips ADD COLUMN {column_name} {definition}")
+            )
+    db.session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +155,26 @@ def health():
     return jsonify({"ok": True})
 
 
+def _normalize_location(value: str) -> str:
+    """Normalizes route names before applying the passenger route filter."""
+    return " ".join(
+        unicodedata.normalize("NFC", str(value or "")).casefold().split()
+    )
+
+
+def _filter_trips_by_route(trips, from_loc: str, to_loc: str):
+    normalized_from = _normalize_location(from_loc)
+    normalized_to = _normalize_location(to_loc)
+    return [
+        trip
+        for trip in trips
+        if (not normalized_from
+            or _normalize_location(trip.from_location) == normalized_from)
+        and (not normalized_to
+             or _normalize_location(trip.to_location) == normalized_to)
+    ]
+
+
 @app.route("/api/trips", methods=["GET"])
 def get_trips():
     """Lists active trips, optionally filtered by the EXACT route.
@@ -145,11 +191,9 @@ def get_trips():
     # STRICT route filtering with `ilike` (case-insensitive exact match):
     # a passenger searching "Кулоб -> Восе" gets ONLY trips whose
     # from_location AND to_location match — never trips for another route.
-    if from_loc:
-        query = query.filter(Trip.from_location.ilike(from_loc))
-    if to_loc:
-        query = query.filter(Trip.to_location.ilike(to_loc))
-    trips = query.order_by(Trip.created_at.desc()).all()
+    trips = _filter_trips_by_route(
+        query.order_by(Trip.created_at.desc()).all(), from_loc, to_loc
+    )
     return jsonify({"trips": [t.to_dict() for t in trips]})
 
 
@@ -169,6 +213,11 @@ def create_trip():
         price=int(payload.get("price") or 0),
         available_seats=int(payload.get("available_seats") or 0),
         departure_time=str(payload.get("departure_time", "")),
+        duration_minutes=int(payload.get("duration_minutes") or 0),
+        car_brand=str(payload.get("car_brand", "")),
+        car_model=str(payload.get("car_model", "")),
+        car_color=str(payload.get("car_color", "")),
+        car_plate=str(payload.get("car_plate", "")),
         status="active",
     )
     db.session.add(trip)
@@ -220,6 +269,11 @@ def handle_post_trip(data):
         price=int(data.get("price") or 0),
         available_seats=int(data.get("available_seats") or 0),
         departure_time=str(data.get("departure_time", "")),
+        duration_minutes=int(data.get("duration_minutes") or 0),
+        car_brand=str(data.get("car_brand", "")),
+        car_model=str(data.get("car_model", "")),
+        car_color=str(data.get("car_color", "")),
+        car_plate=str(data.get("car_plate", "")),
         status="active",
     )
     db.session.add(trip)
@@ -236,11 +290,9 @@ def handle_get_trips(data):
     from_loc = str(data.get("from", "")).strip()
     to_loc = str(data.get("to", "")).strip()
     # STRICT route filtering with `ilike` (same as the REST endpoint).
-    if from_loc:
-        query = query.filter(Trip.from_location.ilike(from_loc))
-    if to_loc:
-        query = query.filter(Trip.to_location.ilike(to_loc))
-    trips = query.order_by(Trip.created_at.desc()).all()
+    trips = _filter_trips_by_route(
+        query.order_by(Trip.created_at.desc()).all(), from_loc, to_loc
+    )
     emit("trips_list", {"trips": [t.to_dict() for t in trips]})
 
 

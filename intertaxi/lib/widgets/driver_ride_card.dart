@@ -10,13 +10,13 @@ import '../models/driver_ride_model.dart';
 ///   • Рақами телефон (driver phone)
 ///   • Ҷои нишаст (available seats)
 ///   • Масир: аз куҷо то куҷо (route: from → to)
-/// plus a "Подробно" button that opens the full trip details.
+/// plus a compact details action that opens the full trip details.
 class DriverRideCard extends StatelessWidget {
   final DriverRide ride;
   final String searchFrom;
   final String searchTo;
 
-  /// Called when the card or the "Подробно" button is tapped.
+  /// Called when the card or the details action is tapped.
   final VoidCallback? onTap;
 
   const DriverRideCard({
@@ -35,9 +35,16 @@ class DriverRideCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: const Color(0xFFDCE8FF)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -52,6 +59,8 @@ class DriverRideCard extends StatelessWidget {
                 _buildDriverRow(),
                 const SizedBox(height: 12),
                 _buildRouteRow(from, to),
+                const SizedBox(height: 12),
+                _buildScheduleRow(),
                 const SizedBox(height: 12),
                 _buildSeatsRow(),
               ],
@@ -69,7 +78,7 @@ class DriverRideCard extends StatelessWidget {
         Container(
           width: 42,
           height: 42,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.lightBlue,
             shape: BoxShape.circle,
           ),
@@ -101,7 +110,7 @@ class DriverRideCard extends StatelessWidget {
                   const Icon(
                     Icons.phone_rounded,
                     size: 13,
-                    color: AppColors.textTertiary,
+                    color: AppColors.primaryBlue,
                   ),
                   const SizedBox(width: 5),
                   Flexible(
@@ -164,13 +173,43 @@ class DriverRideCard extends StatelessWidget {
   }
 
   /// Available seats (Ҷои нишаст) + the "Подробно" action button.
+  Widget _buildScheduleRow() {
+    return Row(
+      children: [
+        const Icon(
+          Icons.schedule_rounded,
+          size: 16,
+          color: AppColors.primaryBlue,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          ride.departureLabel,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          ride.durationLabel,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSeatsRow() {
     return Row(
       children: [
         const Icon(
           Icons.event_seat_rounded,
           size: 16,
-          color: AppColors.textTertiary,
+          color: AppColors.primaryBlue,
         ),
         const SizedBox(width: 5),
         Text(
@@ -181,30 +220,28 @@ class DriverRideCard extends StatelessWidget {
             color: AppColors.textSecondary,
           ),
         ),
-        const Spacer(),
-        SizedBox(
-          height: 34,
-          child: OutlinedButton(
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primaryBlue,
-              side: const BorderSide(
-                color: AppColors.primaryBlue,
-                width: 1.2,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text(
-              'Подробно',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        const SizedBox(width: 12),
+        Text(
+          '${ride.fullRoutePrice} сомонӣ',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryBlue,
           ),
+        ),
+        const Spacer(),
+        IconButton(
+          onPressed: onTap,
+          tooltip: 'Кушодани маълумоти сафар',
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+          style: IconButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primaryBlue,
+            shape: const CircleBorder(),
+          ),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
         ),
       ],
     );

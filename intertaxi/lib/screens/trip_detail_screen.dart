@@ -36,7 +36,24 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   String get _to => widget.trip['to_location']?.toString() ?? '—';
   String get _price => widget.trip['price']?.toString() ?? '0';
   String get _seats => widget.trip['available_seats']?.toString() ?? '0';
-  String get _departure => widget.trip['departure_time']?.toString() ?? '';
+  String get _departure {
+    final raw = widget.trip['departure_time']?.toString() ?? '';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    final hour = parsed.hour.toString().padLeft(2, '0');
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    final year = (parsed.year % 100).toString().padLeft(2, '0');
+    return '$hour:$minute $day.$month.$year';
+  }
+
+  int get _durationMinutes =>
+      int.tryParse(widget.trip['duration_minutes']?.toString() ?? '') ?? 0;
+  String get _carBrand => widget.trip['car_brand']?.toString() ?? '';
+  String get _carModel => widget.trip['car_model']?.toString() ?? '';
+  String get _carColor => widget.trip['car_color']?.toString() ?? '';
+  String get _carPlate => widget.trip['car_plate']?.toString() ?? '';
   String get _driverName => widget.trip['driver_name']?.toString() ?? '';
   String get _driverPhone => widget.trip['driver_phone']?.toString() ?? '';
   bool get _isActive => widget.trip['status']?.toString() == 'active';
@@ -126,7 +143,21 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   Widget _buildRouteCard() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: _flatDecoration(),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0052CC), Color(0xFF1683FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withValues(alpha: 0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -149,7 +180,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
-                    color: _isActive ? AppColors.success : AppColors.gray600,
+                    color: _isActive ? Colors.greenAccent : AppColors.gray600,
                   ),
                 ),
               ),
@@ -159,7 +190,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryBlue,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -167,18 +198,18 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           const SizedBox(height: 18),
           _routeRow(
             icon: Icons.trip_origin_rounded,
-            iconColor: AppColors.success,
+            iconColor: Colors.greenAccent,
             text: _from,
           ),
           Container(
             margin: const EdgeInsets.only(left: 10),
             width: 2,
             height: 22,
-            color: AppColors.gray300,
+            color: Colors.white54,
           ),
           _routeRow(
             icon: Icons.location_on_rounded,
-            iconColor: AppColors.error,
+            iconColor: Colors.redAccent,
             text: _to,
           ),
         ],
@@ -201,7 +232,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Colors.white,
             ),
           ),
         ),
@@ -229,9 +260,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ),
           const Divider(height: 1, color: AppColors.cardBorder),
           _infoTile(
-            icon: Icons.confirmation_number_rounded,
-            label: 'Рақами эълон',
-            value: _id.isEmpty ? '—' : '#$_id',
+            icon: Icons.timelapse_rounded,
+            label: 'Давомнокии сафар',
+            value: _durationLabel,
           ),
         ],
       ),
@@ -243,59 +274,99 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _flatDecoration(),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              color: AppColors.lightBlue,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_rounded,
-              size: 28,
-              color: AppColors.primaryBlue,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _driverName.isEmpty ? 'Ронанда' : _driverName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  color: AppColors.lightBlue,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                Row(
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: 28,
+                  color: AppColors.primaryBlue,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.phone_rounded,
-                      size: 15,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
                     Text(
-                      _driverPhone.isEmpty ? '—' : _driverPhone,
+                      _driverName.isEmpty ? 'Ронанда' : _driverName,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.phone_rounded,
+                          size: 15,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _driverPhone.isEmpty ? '—' : _driverPhone,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (_carBrand.isNotEmpty ||
+              _carModel.isNotEmpty ||
+              _carColor.isNotEmpty ||
+              _carPlate.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: AppColors.cardBorder),
+            const SizedBox(height: 12),
+            _infoTile(
+              icon: Icons.directions_car_rounded,
+              label: 'Мошин',
+              value: [
+                _carBrand,
+                _carModel,
+              ].where((value) => value.isNotEmpty).join(' '),
+            ),
+            _infoTile(
+              icon: Icons.palette_rounded,
+              label: 'Ранг',
+              value: _carColor.isEmpty ? '—' : _carColor,
+            ),
+            _infoTile(
+              icon: Icons.pin_rounded,
+              label: 'Рақами мошин',
+              value: _carPlate.isEmpty ? '—' : _carPlate,
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String get _durationLabel {
+    if (_durationMinutes <= 0) return '—';
+    final hours = _durationMinutes ~/ 60;
+    final minutes = _durationMinutes % 60;
+    if (hours == 0) return '$minutes дақиқа';
+    if (minutes == 0) return '$hours соат';
+    return '$hours соат $minutes дақиқа';
   }
 
   /// Flat, modern card decoration: white surface, hairline border, no shadow.

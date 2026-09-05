@@ -9,6 +9,7 @@ class Order {
   final String toLocation;
   final String price;
   final String duration;
+  final int durationMinutes;
   final int seats;
   final String notes;
   final String createdAt;
@@ -26,6 +27,7 @@ class Order {
     required this.toLocation,
     required this.price,
     required this.duration,
+    this.durationMinutes = 0,
     required this.seats,
     required this.notes,
     required this.createdAt,
@@ -44,6 +46,7 @@ class Order {
     'toLocation': toLocation,
     'price': price,
     'duration': duration,
+    'durationMinutes': durationMinutes,
     'seats': seats,
     'notes': notes,
     'createdAt': createdAt,
@@ -62,6 +65,7 @@ class Order {
     toLocation: json['toLocation'] as String? ?? '',
     price: json['price'] as String? ?? '',
     duration: json['duration'] as String? ?? '',
+    durationMinutes: json['durationMinutes'] as int? ?? 0,
     seats: json['seats'] as int? ?? 0,
     notes: json['notes'] as String? ?? '',
     createdAt: json['createdAt'] as String? ?? '',
@@ -128,8 +132,8 @@ Future<void> deleteOrder(String id) async {
 }
 
 bool _looksLikeUuid(String id) => RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    ).hasMatch(id);
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+).hasMatch(id);
 
 /// Finds the server trip matching the given local order by its content
 /// (route + driver + price) so old announcements that only carry a local

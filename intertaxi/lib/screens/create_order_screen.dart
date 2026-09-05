@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/intertaxi_models.dart' as models;
 import '../services/api_service.dart';
 import 'location_selection_screen.dart';
@@ -24,6 +25,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _pickupController = TextEditingController();
   final _destinationController = TextEditingController();
   final _priceController = TextEditingController();
+  final _durationHoursController = TextEditingController(text: '0');
+  final _durationMinutesController = TextEditingController(text: '30');
   final _notesController = TextEditingController();
 
   int _seats = 3;
@@ -48,6 +51,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _pickupController.dispose();
     _destinationController.dispose();
     _priceController.dispose();
+    _durationHoursController.dispose();
+    _durationMinutesController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -104,7 +109,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-    Future<void> _handleCreateOrder() async {
+  Future<void> _handleCreateOrder() async {
     if (_pickupController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -145,9 +150,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
+    final durationHours = int.tryParse(_durationHoursController.text) ?? -1;
+    final durationMinutes = int.tryParse(_durationMinutesController.text) ?? -1;
+    if (durationHours < 0 ||
+        durationMinutes < 0 ||
+        durationMinutes > 59 ||
+        (durationHours == 0 && durationMinutes == 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Лутфан давомнокии сафарро бо соат ва дақиқа ворид кунед',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final durationTotalMinutes = durationHours * 60 + durationMinutes;
+
     setState(() => _isLoading = true);
 
     try {
+      final prefs = await SharedPreferences.getInstance();
       // 1) Publish the announcement to the server FIRST and capture the REAL
       //    server id (UUID). Storing that same id locally is what makes the
       //    delete button able to remove the row on the server too (and
@@ -159,21 +183,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         'from_location': _pickupController.text.trim(),
         'to_location': _destinationController.text.trim(),
         'departure_time': _departureTime!.toIso8601String(),
+        'duration_minutes': durationTotalMinutes,
+        'car_brand': prefs.getString('driver_car_brand') ?? '',
+        'car_model': prefs.getString('driver_car_model') ?? '',
+        'car_color': prefs.getString('driver_car_color') ?? '',
+        'car_plate': prefs.getString('driver_plate_number') ?? '',
         'price':
-            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0,
+            int.tryParse(
+              _priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), ''),
+            ) ??
+            0,
         'available_seats': _seats,
       });
 
       // 2) Build the local order using the server id when available
       //    (offline fallback keeps a local timestamp id).
       final order = models.Order(
-        id: serverTrip?['id']?.toString() ??
+        id:
+            serverTrip?['id']?.toString() ??
             DateTime.now().millisecondsSinceEpoch.toString(),
         fromLocation: _pickupController.text,
         toLocation: _destinationController.text,
         price: _priceController.text,
-        duration: '',
+        duration: '$durationHours соат $durationMinutes дақиқа',
+        durationMinutes: durationTotalMinutes,
         seats: _seats,
         notes: _notesController.text,
         createdAt: DateTime.now().toIso8601String(),
@@ -468,7 +501,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           child: Text(
                             _departureTime == null
                                 ? 'Вақтро интихоб кунед'
-                                : '${_departureTime!.day}/${_departureTime!.month}/${_departureTime!.year} - ${_departureTime!.hour}:${_departureTime!.minute.toString().padLeft(2, '0')}',
+                                : '${_departureTime!.hour.toString().padLeft(2, '0')}:${_departureTime!.minute.toString().padLeft(2, '0')} ${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${(_departureTime!.year % 100).toString().padLeft(2, '0')}',
                             style: TextStyle(
                               fontSize: 15,
                               color: _departureTime == null
@@ -488,6 +521,42 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       ],
                     ),
                   ),
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildSectionTitle('Давомнокии сафар', Icons.timelapse_rounded),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _durationHoursController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Соат',
+                          suffixText: 'соат',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _durationMinutesController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Дақиқа',
+                          suffixText: 'дақ.',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 20),

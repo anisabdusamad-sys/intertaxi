@@ -717,7 +717,7 @@ bool _isSearching = false;
 
     return SingleChildScrollView(
 
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
 
       child: Column(
 
@@ -725,101 +725,85 @@ bool _isSearching = false;
 
         children: [
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
-          Row(
+          // Greeting — clean, no profile icon (profile lives in its own tab)
 
-            children: [
+          Text(
 
-              Expanded(
+            'Салом, ${widget.passengerName}!',
 
-                child: Column(
+            style: const TextStyle(
 
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              fontSize: 26,
 
-                  children: [
+              fontWeight: FontWeight.w800,
 
-                    Text(
+              letterSpacing: -0.5,
 
-                      'Салом, ${widget.passengerName}!',
+              color: Colors.black87,
 
-                      style: const TextStyle(
-
-                        fontSize: 24,
-
-                        fontWeight: FontWeight.bold,
-
-                        color: Colors.black87,
-
-                      ),
-
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-
-                      'Ба куҷо меравем?',
-
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-
-                    ),
-
-                  ],
-
-                ),
-
-              ),
-
-              const Icon(
-
-                Icons.account_circle_rounded,
-
-                size: 48,
-
-                color: Color(0xFF0066FF),
-
-              ),
-
-            ],
+            ),
 
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 4),
+
+          Text(
+
+            'Ба куҷо меравем?',
+
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+
+          ),
+
+          const SizedBox(height: 20),
 
 
 
-          // Search card
+          // Premium compact search card — inspired by the profile header:
+
+          // gradient with decorative circles, frosted location strip and a
+
+          // single inline search button. No car icon, no redundant title.
 
           Container(
 
             width: double.infinity,
 
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
 
             decoration: BoxDecoration(
 
-              gradient: const LinearGradient(
+              borderRadius: BorderRadius.circular(24),
 
-                colors: [Color(0xFF1E56EC), Color(0xFF0B309A)],
+              gradient: const LinearGradient(
 
                 begin: Alignment.topLeft,
 
                 end: Alignment.bottomRight,
 
-              ),
+                colors: [
 
-              borderRadius: BorderRadius.circular(24),
+                  Color(0xFF0052CC),
+
+                  Color(0xFF0066FF),
+
+                  Color(0xFF4D94FF),
+
+                ],
+
+              ),
 
               boxShadow: [
 
                 BoxShadow(
 
-                  color: const Color(0xFF1E56EC).withValues(alpha: 0.35),
+                  color: const Color(0xFF0066FF).withValues(alpha: 0.30),
 
-                  blurRadius: 24,
+                  blurRadius: 20,
 
-                  offset: const Offset(0, 10),
+                  offset: const Offset(0, 8),
 
                 ),
 
@@ -827,264 +811,170 @@ bool _isSearching = false;
 
             ),
 
-            child: Column(
+            child: ClipRRect(
 
-              crossAxisAlignment: CrossAxisAlignment.start,
+              borderRadius: BorderRadius.circular(24),
 
-              children: [
+              child: Stack(
 
-                const Icon(
+                children: [
 
-                  Icons.local_taxi_rounded,
+                  // Decorative translucent circles for depth
 
-                  size: 48,
+                  Positioned(
 
-                  color: Colors.white,
+                    top: -40,
 
-                ),
+                    right: -30,
 
-                const SizedBox(height: 16),
+                    child: Container(
 
-                const Text(
+                      width: 120,
 
-                  'Ҷустуҷӯи мошин',
+                      height: 120,
 
-                  style: TextStyle(
+                      decoration: BoxDecoration(
 
-                    fontSize: 20,
+                        shape: BoxShape.circle,
 
-                    fontWeight: FontWeight.bold,
+                        color: Colors.white.withValues(alpha: 0.08),
 
-                    color: Colors.white,
+                      ),
 
-                  ),
-
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-
-                  'Мошинро барои сафар пайдо кунед',
-
-                  style: TextStyle(fontSize: 13, color: Colors.white70),
-
-                ),
-
-                const SizedBox(height: 16),
-
-
-
-                // From / To location inputs — frosted glass panel with a
-
-                // dashed route connector between origin and destination.
-
-                Container(
-
-                  padding: const EdgeInsets.symmetric(
-
-                    horizontal: 16,
-
-                    vertical: 10,
+                    ),
 
                   ),
 
-                  decoration: BoxDecoration(
+                  Positioned(
 
-                    color: Colors.white.withValues(alpha: 0.15),
+                    bottom: -50,
 
-                    borderRadius: BorderRadius.circular(14),
+                    right: 40,
 
-                    border: Border.all(color: Colors.white24),
+                    child: Container(
 
+                      width: 100,
+
+                      height: 100,
+
+                      decoration: BoxDecoration(
+
+                        shape: BoxShape.circle,
+
+                        color: Colors.white.withValues(alpha: 0.06),
+
+                      ),
+
+                    ),
                   ),
-
-                  child: Column(
-
+                  // Actual content
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
-                      _buildLocationRow(
-
-                        icon: Icons.trip_origin_rounded,
-
-                        color: Colors.greenAccent,
-
-                        label: 'Аз куҷо меравед?',
-
-                        selectedValue: _fromCity,
-
-                        onTap: () => _showCityPicker(isFrom: true),
-
-                      ),
-
-                      // Dashed vertical route line between the two pins.
-
-                      Padding(
-
-                        padding: const EdgeInsets.only(left: 9),
-
-                        child: Column(
-
-                          children: List.generate(
-
-                            4,
-
-                            (index) => Container(
-
-                              width: 2,
-
-                              height: 4,
-
-                              margin: const EdgeInsets.symmetric(vertical: 2),
-
-                              decoration: BoxDecoration(
-
-                                color: Colors.white38,
-
-                                borderRadius: BorderRadius.circular(1),
-
-                              ),
-
-                            ),
-
-                          ),
-
+                      // Frosted location strip: from → to
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-
-                      ),
-
-                      _buildLocationRow(
-
-                        icon: Icons.location_on_rounded,
-
-                        color: Colors.redAccent,
-
-                        label: 'Ба куҷо рафтан мехоҳед?',
-
-                        selectedValue: _toCity,
-
-                        onTap: () => _showCityPicker(isFrom: false),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                ),
-
-
-
-                const SizedBox(height: 16),
-
-                Container(
-
-                  width: double.infinity,
-
-                  height: 50,
-
-                  decoration: BoxDecoration(
-
-                    borderRadius: BorderRadius.circular(14),
-
-                    boxShadow: const [
-
-                      BoxShadow(
-
-                        color: Colors.black12,
-
-                        blurRadius: 12,
-
-                        offset: Offset(0, 4),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                  child: ElevatedButton.icon(
-
-                    onPressed: _isSearching ? null : _handleSearch,
-
-                    icon: _isSearching
-
-                        ? const SizedBox(
-
-                            width: 18,
-
-                            height: 18,
-
-                            child: CircularProgressIndicator(
-
-                              strokeWidth: 2,
-
-                              color: Color(0xFF1E56EC),
-
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildLocationRow(
+                              icon: Icons.trip_origin_rounded,
+                              color: Colors.greenAccent,
+                              label: 'Аз куҷо меравед?',
+                              selectedValue: _fromCity,
+                              onTap: () => _showCityPicker(isFrom: true),
                             ),
-
-                          )
-
-                        : const Icon(Icons.search_rounded),
-
-                    label: Text(
-
-                      _isSearching ? 'Ҷустуҷӯ...' : 'Ҷустуҷӯи мошин',
-
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-
-                    ),
-
-                    style: ElevatedButton.styleFrom(
-
-                      backgroundColor: Colors.white,
-
-                      foregroundColor: const Color(0xFF1E56EC),
-
-                      disabledBackgroundColor: Colors.white.withValues(
-
-                        alpha: 0.7,
-
+                            Padding(
+                              padding: const EdgeInsets.only(left: 9),
+                              child: Column(
+                                children: List.generate(
+                                  4,
+                                  (index) => Container(
+                                    width: 2,
+                                    height: 4,
+                                    margin: const EdgeInsets.symmetric(vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white38,
+                                      borderRadius: BorderRadius.circular(1),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            _buildLocationRow(
+                              icon: Icons.location_on_rounded,
+                              color: Colors.redAccent,
+                              label: 'Ба куҷо рафтан мехоҳед?',
+                              selectedValue: _toCity,
+                              onTap: () => _showCityPicker(isFrom: false),
+                            ),
+                          ],
+                        ),
                       ),
-
-                      disabledForegroundColor: const Color(
-
-                        0xFF1E56EC,
-
-                      ).withValues(alpha: 0.5),
-
-                      elevation: 0,
-
-                      shape: RoundedRectangleBorder(
-
-                        borderRadius: BorderRadius.circular(14),
-
+                      const SizedBox(height: 12),
+                      // Compact search button — same blue panel, no car icon,
+                      // no "Ҷустуҷӯи мошин" label above it.
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: _isSearching ? null : _handleSearch,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF0052CC),
+                            disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
+                            disabledForegroundColor: const Color(0xFF0052CC).withValues(alpha: 0.5),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isSearching
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Color(0xFF0052CC),
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.search_rounded, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Ҷустуҷӯи мошин',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
-
-                    ),
-
+                    ],
                   ),
-
-                ),
-
-              ],
-
+                ],
+              ),
             ),
-
           ),
 
-
+          const SizedBox(height: 20),
 
           // Search results (driver list) — rendered below the search card
-
           _buildSearchResultsSection(),
-
         ],
-
       ),
-
     );
-
   }
 
 

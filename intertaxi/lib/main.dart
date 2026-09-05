@@ -1254,9 +1254,11 @@ class CreateOrderScreen extends StatefulWidget {
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
-  final _durationController = TextEditingController();
+  final _durationHoursController = TextEditingController(text: '0');
+  final _durationMinutesController = TextEditingController(text: '30');
   int _seats = 3;
   bool _isLoading = false;
+  DateTime? _departureTime;
   String? _selectedFromLocation;
   String? _selectedToLocation;
 
@@ -1279,8 +1281,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   void dispose() {
     _priceController.dispose();
-    _durationController.dispose();
+    _durationHoursController.dispose();
+    _durationMinutesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDepartureTime() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time != null) {
+      setState(
+        () => _departureTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        ),
+      );
+    }
   }
 
   Future<void> _handleCreateOrder() async {
@@ -1303,6 +1331,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       await prefs.setString('active_route_to', _selectedToLocation!);
 
       final now = DateTime.now();
+      final durationHours = int.tryParse(_durationHoursController.text) ?? -1;
+      final durationMinutes =
+          int.tryParse(_durationMinutesController.text) ?? -1;
+      if (_departureTime == null ||
+          durationHours < 0 ||
+          durationMinutes < 0 ||
+          durationMinutes > 59 ||
+          (durationHours == 0 && durationMinutes == 0)) {
+        throw const FormatException('Invalid departure or duration');
+      }
+      final durationTotalMinutes = durationHours * 60 + durationMinutes;
 
       // Publish to the server FIRST and capture the REAL server id (UUID).
       // Storing that id locally is what lets the delete button remove the
@@ -1313,10 +1352,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         'driver_phone': _driverPhone,
         'from_location': _selectedFromLocation!,
         'to_location': _selectedToLocation!,
-        'departure_time': now.toIso8601String(),
+        'departure_time': _departureTime!.toIso8601String(),
+        'duration_minutes': durationTotalMinutes,
+        'car_brand': prefs.getString('driver_car_brand') ?? '',
+        'car_model': prefs.getString('driver_car_model') ?? '',
+        'car_color': prefs.getString('driver_car_color') ?? '',
+        'car_plate': prefs.getString('driver_plate_number') ?? '',
         'price':
-            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0,
+            int.tryParse(
+              _priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), ''),
+            ) ??
+            0,
         'available_seats': _seats,
       });
 
@@ -1324,15 +1370,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // the passenger route search (real data — no mock). Car info comes from
       // the driver registration data stored earlier.
       final order = Order(
-        id: serverTrip?['id']?.toString() ?? now.millisecondsSinceEpoch.toString(),
+        id:
+            serverTrip?['id']?.toString() ??
+            now.millisecondsSinceEpoch.toString(),
         fromLocation: _selectedFromLocation!,
         toLocation: _selectedToLocation!,
         price: _priceController.text.trim(),
-        duration: _durationController.text.trim(),
+        duration: '$durationHours соат $durationMinutes дақиқа',
+        durationMinutes: durationTotalMinutes,
         seats: _seats,
         notes: '',
         createdAt: now.toIso8601String(),
-        departureTime: now.toIso8601String(),
+        departureTime: _departureTime!.toIso8601String(),
         driverName: _driverName,
         driverPhone: _driverPhone,
         carBrand: prefs.getString('driver_car_brand') ?? '',
@@ -1500,21 +1549,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Duration input
-              TextFormField(
-                controller: _durationController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Вақтро ворид кунед';
-                  }
-                  return null;
-                },
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Вақт (дақиқа)',
-                  border: OutlineInputBorder(),
-                  hintText: 'Масалан: 30',
+              OutlinedButton.icon(
+                onPressed: _selectDepartureTime,
+                icon: const Icon(Icons.event_rounded),
+                label: Text(
+                  _departureTime == null
+                      ? 'Рӯз ва вақти рафтанро интихоб кунед'
+                      : '${_departureTime!.hour.toString().padLeft(2, '0')}:${_departureTime!.minute.toString().padLeft(2, '0')} '
+                            '${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${(_departureTime!.year % 100).toString().padLeft(2, '0')}',
                 ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _durationHoursController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Давомнокӣ, соат',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _durationMinutesController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Давомнокӣ, дақиқа',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               // Seats selection
@@ -1976,6 +2045,7 @@ class Order {
   final String toLocation;
   final String price;
   final String duration;
+  final int durationMinutes;
   final int seats;
   final String notes;
   final String createdAt;
@@ -1993,6 +2063,7 @@ class Order {
     required this.toLocation,
     required this.price,
     required this.duration,
+    this.durationMinutes = 0,
     required this.seats,
     required this.notes,
     required this.createdAt,
@@ -2011,6 +2082,7 @@ class Order {
     'toLocation': toLocation,
     'price': price,
     'duration': duration,
+    'durationMinutes': durationMinutes,
     'seats': seats,
     'notes': notes,
     'createdAt': createdAt,
@@ -2029,6 +2101,7 @@ class Order {
     toLocation: json['toLocation'] as String? ?? '',
     price: json['price'] as String? ?? '',
     duration: json['duration'] as String? ?? '',
+    durationMinutes: json['durationMinutes'] as int? ?? 0,
     seats: json['seats'] as int? ?? 0,
     notes: json['notes'] as String? ?? '',
     createdAt: json['createdAt'] as String? ?? '',
@@ -2099,8 +2172,8 @@ Future<void> deleteOrder(String id) async {
 }
 
 bool _looksLikeUuid(String id) => RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    ).hasMatch(id);
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+).hasMatch(id);
 
 /// Finds the server trip matching the given local order by its content
 /// (route + driver + price) so old announcements that only carry a local
@@ -3052,7 +3125,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                             width: 72,
                             height: 72,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0066FF).withValues(alpha: 0.12),
+                              color: const Color(
+                                0xFF0066FF,
+                              ).withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: _isOnline
@@ -3730,7 +3805,9 @@ class _RouteMapTabState extends State<_RouteMapTab> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0066FF).withValues(alpha: 0.1),
+                                color: const Color(
+                                  0xFF0066FF,
+                                ).withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
