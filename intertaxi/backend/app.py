@@ -17,6 +17,7 @@ Endpoints / events:
 """
 
 import os
+import uuid
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
@@ -50,7 +51,13 @@ class Trip(db.Model):
 
     __tablename__ = "trips"
 
-    id = db.Column(db.Integer, primary_key=True)
+    # UUID string primary key — matches the rows already stored on the
+    # production database (Render), e.g. "42192e1f-788e-4312-a057-...".
+    id = db.Column(
+        db.String(64),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
     driver_id = db.Column(db.String(64), index=True, nullable=False)
     driver_name = db.Column(db.String(120), default="", nullable=False)
     driver_phone = db.Column(db.String(32), default="", nullable=False)
@@ -91,25 +98,26 @@ with app.app_context():
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _broadcast_trip_deleted(trip_id: int) -> None:
+def _broadcast_trip_deleted(trip_id) -> None:
     """Tells every connected client (drivers AND passengers) that a trip
     was removed so their lists update in real time."""
-    socketio.emit("trip_deleted", {"id": trip_id})
+    socketio.emit("trip_deleted", {"id": str(trip_id)})
 
 
 def _delete_trip_by_id(trip_id) -> bool:
-    """Deletes a trip (accepts int or numeric string). Returns True when the
-    trip existed and was removed."""
-    try:
-        trip_id = int(str(trip_id))
-    except (TypeError, ValueError):
+    """Deletes a trip by its id. IDs are UUID strings (e.g.
+    "42192e1f-788e-4312-a057-5ecc4129748a"), but any value is accepted —
+    it is only used as an exact lookup key. Returns True when the trip
+    existed and was removed."""
+    key = str(trip_id).strip() if trip_id is not None else ""
+    if not key:
         return False
-    trip = db.session.get(Trip, trip_id)
+    trip = db.session.get(Trip, key)
     if trip is None:
         return False
     db.session.delete(trip)
     db.session.commit()
-    _broadcast_trip_deleted(trip_id)
+    _broadcast_trip_deleted(key)
     return True
 
 # ---------------------------------------------------------------------------
@@ -240,7 +248,8 @@ def handle_get_trips(data):
 def handle_book_trip(data):
     """Passenger books a seat on a trip."""
     data = data or {}
-    trip = db.session.get(Trip, int(str(data.get("trip_id", "")) or 0))
+    trip_key = str(data.get("trip_id", "") or "").strip()
+    trip = db.session.get(Trip, trip_key) if trip_key else None
     if trip is None:
         return {"ok": False, "error": "Trip not found"}
     if trip.available_seats <= 0:
@@ -274,7 +283,7 @@ def handle_delete_trip(data):
         return {"ok": False, "error": "trip_id is required"}
     deleted = _delete_trip_by_id(trip_id)
     if deleted:
-        return {"ok": True, "id": int(str(trip_id))}
+        return {"ok": True, "id": str(trip_id)}
     return {"ok": False, "error": "Trip not found"}
 
 
