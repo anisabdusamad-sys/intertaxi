@@ -211,6 +211,24 @@ def book_trip_rest(trip_id):
     return {'trip': trip.to_dict()}, 200
 
 
+@app.route('/api/trips/<trip_id>', methods=['DELETE'])
+def delete_trip_rest(trip_id):
+    """PERMANENTLY delete a trip announcement (REST).
+
+    This is the primary delete path used by the Flutter driver app: the row
+    is removed from the database and a `trip_deleted` event is broadcast to
+    ALL connected clients so every driver/passenger list updates instantly.
+    """
+    trip = Trip.query.get(trip_id)
+    if not trip:
+        return {'ok': False, 'error': 'Trip not found'}, 404
+    db.session.delete(trip)
+    db.session.commit()
+    logger.info(f'Trip deleted via REST: {trip_id}')
+    socketio.emit('trip_deleted', {'id': str(trip_id)})
+    return {'ok': True, 'id': str(trip_id)}, 200
+
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint for Render / uptime monitors."""
@@ -256,6 +274,36 @@ def handle_post_trip(data):
 
     # Broadcast to ALL connected clients (including the poster)
     emit('new_trip', trip.to_dict(), broadcast=True)
+
+
+@socketio.on('delete_trip')
+def handle_delete_trip(data):
+    """Driver deletes one of their trips.
+
+    Expected payload: {'trip_id': '<uuid>'} (also accepts the bare id).
+    The trip is removed from the database and `trip_deleted` with
+    {'id': ...} is broadcast to ALL connected clients (drivers AND
+    passengers) so their lists update in real time.
+    """
+    trip_id = None
+    if isinstance(data, dict):
+        trip_id = data.get('trip_id') or data.get('id')
+    elif data is not None:
+        trip_id = data
+
+    trip_id = str(trip_id).strip() if trip_id is not None else ''
+    if not trip_id:
+        return {'ok': False, 'error': 'trip_id is required'}
+
+    trip = Trip.query.get(trip_id)
+    if not trip:
+        return {'ok': False, 'error': 'Trip not found'}
+
+    db.session.delete(trip)
+    db.session.commit()
+    logger.info(f'Trip deleted via socket: {trip_id}')
+    socketio.emit('trip_deleted', {'id': trip_id})
+    return {'ok': True, 'id': trip_id}
 
 
 @socketio.on('get_trips')
