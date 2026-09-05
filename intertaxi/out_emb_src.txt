@@ -1,5 +1,0 @@
-﻿D:\flutter\packages\flutter_tools\gradle\src\main\kotlin\FlutterPlugin.kt:89: // Configure the Maven repository.
-D:\flutter\packages\flutter_tools\gradle\src\main\kotlin\FlutterPlugin.kt:92: ?: FlutterPluginConstants.DEFAULT_MAVEN_HOST
-D:\flutter\packages\flutter_tools\gradle\src\main\kotlin\FlutterPlugin.kt:100: repositories.maven {
-D:\flutter\packages\flutter_tools\gradle\src\main\kotlin\FlutterPluginConstants.kt:24: const val DEFAULT_MAVEN_HOST = "https://storage.googleapis.com"
-D:\flutter\packages\flutter_tools\gradle\src\test\kotlin\plugins\PluginHandlerTest.kt:248: "io.flutter:flutter_embedding_debug:$EXAMPLE_ENGINE_VERSION"

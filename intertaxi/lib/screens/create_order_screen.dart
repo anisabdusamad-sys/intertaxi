@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../models/intertaxi_models.dart' as models;
 import '../services/api_service.dart';
@@ -150,9 +148,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Build the trip payload from the form fields
+      // 1) Publish the announcement to the server FIRST and capture the REAL
+      //    server id (UUID). Storing that same id locally is what makes the
+      //    delete button able to remove the row on the server too (and
+      //    broadcast `trip_deleted` to every passenger device).
+      final serverTrip = await ApiService.createTrip({
+        'driver_id': widget.driverPhone,
+        'driver_name': widget.driverName,
+        'driver_phone': widget.driverPhone,
+        'from_location': _pickupController.text.trim(),
+        'to_location': _destinationController.text.trim(),
+        'departure_time': _departureTime!.toIso8601String(),
+        'price':
+            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
+                0,
+        'available_seats': _seats,
+      });
+
+      // 2) Build the local order using the server id when available
+      //    (offline fallback keeps a local timestamp id).
       final order = models.Order(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: serverTrip?['id']?.toString() ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         fromLocation: _pickupController.text,
         toLocation: _destinationController.text,
         price: _priceController.text,
@@ -169,25 +186,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         carPlate: '',
       );
 
-      // Persist the order locally (SharedPreferences) for offline /
-      // recent-order display
+      // 3) Persist the order locally (SharedPreferences) so it appears in
+      //    "Эълонҳои ман" and survives app restarts.
       await models.saveOrder(order);
-
-      // Best-effort sync to the Flask backend (REST) so the announcement
-      // also appears on https://intertaxi.onrender.com and for connected passengers.
-      // Never blocks or crashes the driver flow when the server is offline.
-      unawaited(ApiService.postTrip({
-        'driver_id': widget.driverPhone,
-        'driver_name': widget.driverName,
-        'driver_phone': widget.driverPhone,
-        'from_location': _pickupController.text.trim(),
-        'to_location': _destinationController.text.trim(),
-        'departure_time': _departureTime!.toIso8601String(),
-        'price':
-            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0,
-        'available_seats': _seats,
-      }));
 
       if (!mounted) return;
       setState(() => _isLoading = false);

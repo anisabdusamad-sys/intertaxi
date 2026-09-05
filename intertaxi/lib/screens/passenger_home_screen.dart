@@ -434,6 +434,11 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
 
   final bool _followUser = true;
 
+  /// Periodically re-fetches server trips for the active search so trips a
+  /// driver DELETED disappear from the мусофир results automatically.
+
+  Timer? _refreshTimer;
+
 
 
   @override
@@ -445,6 +450,16 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     _fromCity = 'Душанбе';
 
     _toCity = 'Кӯлоб';
+
+    // Keep an open results list in sync with the server: when any driver
+    // deletes an announcement it disappears here without the user having to
+    // re-search manually.
+
+    _refreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+
+      _silentRefreshResults();
+
+    });
 
 
 
@@ -489,6 +504,9 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   @override
 
   void dispose() {
+
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
 
     _positionSubscription?.cancel();
 
@@ -2690,6 +2708,53 @@ bool _isSearching = false;
   }
 
 
+
+  /// Silent background refresh: while the passenger has already searched,
+  /// this re-fetches the server trips (plus the local offline fallback) and
+  /// swaps the results WITHOUT flashing the loading spinner — so trips a
+  /// driver just deleted disappear automatically from the open list.
+  Future<void> _silentRefreshResults() async {
+    final from = _fromCity;
+    final to = _toCity;
+    if (!_hasSearched || from == null || to == null || _isSearching) return;
+    try {
+      final rides = <DriverRide>[];
+      final seenIds = <String>{};
+
+      // 1) Backend trips, filtered server-side by the EXACT route.
+      final serverTrips = await ApiService.fetchTrips(from: from, to: to);
+      for (final trip in serverTrips) {
+        final ride = DriverRide.fromMap(trip);
+        if (ride.availableSeats > 0 && seenIds.add(ride.id)) {
+          rides.add(ride);
+        }
+      }
+
+      // 2) Local announcements as an offline fallback (strict route match).
+      final orders = await models.loadOrders();
+      for (final order in orders) {
+        final ride = orderToRide(order);
+        if (ride == null) continue;
+        if (ride.availableSeats > 0 &&
+            ride.isExactMatch(from, to) &&
+            seenIds.add(ride.id)) {
+          rides.add(ride);
+        }
+      }
+
+      rides.sort((a, b) {
+        final aExact = a.isExactMatch(from, to) ? 0 : 1;
+        final bExact = b.isExactMatch(from, to) ? 0 : 1;
+        if (aExact != bExact) return aExact - bExact;
+        return a.departureTime.compareTo(b.departureTime);
+      });
+
+      if (!mounted) return;
+      setState(() => _searchResults = rides);
+    } catch (_) {
+      // Ignore transient network errors — keep the previous results.
+    }
+  }
 
   /// Results header + scrollable driver list, rendered below the panel.
 

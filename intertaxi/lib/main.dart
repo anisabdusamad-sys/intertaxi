@@ -1303,11 +1303,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       await prefs.setString('active_route_to', _selectedToLocation!);
 
       final now = DateTime.now();
+
+      // Publish to the server FIRST and capture the REAL server id (UUID).
+      // Storing that id locally is what lets the delete button remove the
+      // SAME announcement from the server afterwards (and from passengers).
+      final serverTrip = await ApiService.createTrip({
+        'driver_id': _driverPhone,
+        'driver_name': _driverName,
+        'driver_phone': _driverPhone,
+        'from_location': _selectedFromLocation!,
+        'to_location': _selectedToLocation!,
+        'departure_time': now.toIso8601String(),
+        'price':
+            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
+                0,
+        'available_seats': _seats,
+      });
+
       // Save the announcement so it appears on the driver home screen AND in
       // the passenger route search (real data — no mock). Car info comes from
       // the driver registration data stored earlier.
       final order = Order(
-        id: now.millisecondsSinceEpoch.toString(),
+        id: serverTrip?['id']?.toString() ?? now.millisecondsSinceEpoch.toString(),
         fromLocation: _selectedFromLocation!,
         toLocation: _selectedToLocation!,
         price: _priceController.text.trim(),
@@ -1327,22 +1344,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // Plain async I/O (SharedPreferences) — never blocks the UI thread.
       // Keeps the announcement on THIS device (driver home screen list).
       await saveOrder(order);
-
-      // Best-effort sync to the Flask backend (REST) so the announcement
-      // also appears on https://intertaxi.onrender.com and for connected passengers.
-      // Never blocks or crashes the driver flow when the server is offline.
-      unawaited(ApiService.postTrip({
-        'driver_id': _driverPhone,
-        'driver_name': _driverName,
-        'driver_phone': _driverPhone,
-        'from_location': _selectedFromLocation!,
-        'to_location': _selectedToLocation!,
-        'departure_time': now.toIso8601String(),
-        'price':
-            int.tryParse(_priceController.text.trim().replaceAll(RegExp(r'[^0-9]'), '')) ??
-                0,
-        'available_seats': _seats,
-      }));
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -2063,15 +2064,79 @@ Future<List<Order>> loadOrders() async {
       .toList();
 }
 
-/// Deletes a single order by id
+/// Deletes a single order by id — from the SERVER (which also broadcasts
+/// `trip_deleted` to every passenger device, so the announcement disappears
+/// from the мусофир app too) AND from local storage.
 Future<void> deleteOrder(String id) async {
   final prefs = await SharedPreferences.getInstance();
   final orders = await loadOrders();
+  Order? order;
+  for (final o in orders) {
+    if (o.id == id) {
+      order = o;
+      break;
+    }
+  }
+
+  // 1) Delete on the server. New announcements store the server UUID as
+  //    their local id, so a direct call works. Older saved announcements
+  //    have a local timestamp id, so we fall back to matching the server
+  //    trip by its route/driver/price and delete that exact row.
+  final serverId = _looksLikeUuid(id) ? id : await _resolveServerTripId(order);
+  if (serverId != null && serverId.isNotEmpty) {
+    // deleteTrip returns true when the server confirmed the delete OR the
+    // trip was already gone (404). It returns false only when unreachable —
+    // in that case we still remove the local copy so the app keeps working.
+    await ApiService.deleteTrip(serverId);
+  }
+
+  // 2) Always remove the local copy.
   orders.removeWhere((o) => o.id == id);
   await prefs.setString(
     'saved_orders',
     jsonEncode(orders.map((o) => o.toJson()).toList()),
   );
+}
+
+bool _looksLikeUuid(String id) => RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(id);
+
+/// Finds the server trip matching the given local order by its content
+/// (route + driver + price) so old announcements that only carry a local
+/// timestamp id can still be removed from the server.
+Future<String?> _resolveServerTripId(Order? order) async {
+  if (order == null) return null;
+  final trips = await ApiService.fetchTrips();
+  final norm = (String? s) => (s ?? '').trim().toLowerCase();
+  final priceNum = int.tryParse(order.price.replaceAll(RegExp(r'[^0-9]'), ''));
+  final candidates = <Map<String, dynamic>>[];
+  for (final t in trips) {
+    if (norm(t['from_location']) != norm(order.fromLocation)) continue;
+    if (norm(t['to_location']) != norm(order.toLocation)) continue;
+    if (order.driverPhone.isNotEmpty &&
+        norm(t['driver_phone']) != norm(order.driverPhone) &&
+        norm(t['driver_id']) != norm(order.driverPhone)) {
+      continue;
+    }
+    if (priceNum != null &&
+        t['price'] is num &&
+        (t['price'] as num) != priceNum) {
+      continue;
+    }
+    candidates.add(t);
+  }
+  if (candidates.isEmpty) return null;
+  if (candidates.length == 1) return candidates.first['id']?.toString();
+  final depart = order.departureTime.trim();
+  if (depart.isNotEmpty) {
+    for (final t in candidates) {
+      if (norm(t['departure_time']) == norm(depart)) {
+        return t['id']?.toString();
+      }
+    }
+  }
+  return candidates.first['id']?.toString();
 }
 
 class DriverHomeScreen extends StatefulWidget {

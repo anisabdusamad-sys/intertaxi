@@ -66,9 +66,14 @@ class ApiService {
     return cleaned;
   }
 
-  /// Pushes a driver trip/announcement to the backend (REST fallback used by
-  /// the create-order flow). Returns `true` when the server accepted it.
-  static Future<bool> postTrip(Map<String, dynamic> payload) async {
+  /// Pushes a driver trip/announcement to the backend (REST) and returns the
+  /// created trip map — including its REAL server id (UUID) — so callers can
+  /// link the locally saved announcement to the server row and later delete
+  /// it by that exact id. Returns `null` when the server is unreachable or
+  /// rejects the trip.
+  static Future<Map<String, dynamic>?> createTrip(
+    Map<String, dynamic> payload,
+  ) async {
     try {
       final base = await resolveBaseUrl();
       final response = await http
@@ -78,10 +83,24 @@ class ApiService {
             body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 5));
-      return response.statusCode == 201 || response.statusCode == 200;
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          final trip = data['trip'];
+          if (trip is Map<String, dynamic>) return trip;
+          return data;
+        }
+      }
     } catch (_) {
-      return false;
+      // ignore — backend offline
     }
+    return null;
+  }
+
+  /// Pushes a driver trip/announcement to the backend (REST fallback used by
+  /// the create-order flow). Returns `true` when the server accepted it.
+  static Future<bool> postTrip(Map<String, dynamic> payload) async {
+    return await createTrip(payload) != null;
   }
 
   /// Fetches trips from the backend, optionally filtered by the EXACT route.
