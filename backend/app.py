@@ -72,6 +72,22 @@ def create_tables():
                         f'{column_name} {definition}'
                     )
                 )
+        booking_columns = {
+            'status': "VARCHAR(16) DEFAULT 'pending' NOT NULL",
+            'decision_message': "VARCHAR(255) DEFAULT '' NOT NULL",
+        }
+        booking_existing = {
+            column['name']
+            for column in inspect(db.engine).get_columns('bookings')
+        }
+        for column_name, definition in booking_columns.items():
+            if column_name not in booking_existing:
+                db.session.execute(
+                    text(
+                        f'ALTER TABLE bookings ADD COLUMN '
+                        f'{column_name} {definition}'
+                    )
+                )
         db.session.commit()
 
 
@@ -255,6 +271,16 @@ def _create_booking(data):
     if trip.status != 'active' or trip.available_seats <= 0:
         return None, 'No seats available on this trip'
 
+    passenger_phone = str(data.get('passenger_phone', '')).strip()
+    if not passenger_phone:
+        return None, 'Passenger phone is required'
+    duplicate = Booking.query.filter_by(
+        trip_id=trip.id,
+        passenger_phone=passenger_phone,
+    ).first()
+    if duplicate is not None:
+        return None, 'Аллакай шумо ба ин сафар паём фиристодед'
+
     trip.available_seats -= 1
     if trip.available_seats == 0:
         trip.status = 'booked'
@@ -262,7 +288,7 @@ def _create_booking(data):
         trip_id=trip.id,
         driver_id=trip.driver_id,
         passenger_name=str(data.get('passenger_name', '')).strip(),
-        passenger_phone=str(data.get('passenger_phone', '')).strip(),
+        passenger_phone=passenger_phone,
         from_location=trip.from_location,
         to_location=trip.to_location,
     )
@@ -291,6 +317,40 @@ def create_booking_rest():
         status = 404 if error == 'Trip not found' else 409
         return {'ok': False, 'error': error}, status
     return {'ok': True, **result}, 201
+
+
+@app.route('/api/bookings/<booking_id>/decision', methods=['POST'])
+def decide_booking_rest(booking_id):
+    """Driver accepts or rejects a passenger booking."""
+    data = request.get_json(silent=True) or {}
+    decision = str(data.get('decision', '')).strip().lower()
+    driver_id = str(data.get('driver_id', '')).strip()
+    booking = db.session.get(Booking, booking_id)
+    if booking is None:
+        return {'ok': False, 'error': 'Booking not found'}, 404
+    if driver_id and booking.driver_id != driver_id:
+        return {'ok': False, 'error': 'Booking does not belong to this driver'}, 403
+    if decision not in ('approved', 'rejected'):
+        return {'ok': False, 'error': 'Invalid decision'}, 400
+    if booking.status != 'pending':
+        return {'ok': False, 'error': 'Booking already decided'}, 409
+
+    booking.status = decision
+    booking.decision_message = (
+        'Аъло, шумо ҷойро аллакай брон кардед, метавонед ба терминал ҳозир шавед.'
+        if decision == 'approved'
+        else 'Ба шумо рафтан иҷозат дода нашуд.'
+    )
+    if decision == 'rejected':
+        trip = db.session.get(Trip, booking.trip_id)
+        if trip is not None:
+            trip.available_seats += 1
+            if trip.status == 'booked':
+                trip.status = 'active'
+    db.session.commit()
+    payload = booking.to_dict()
+    socketio.emit('booking_decision', payload)
+    return {'ok': True, 'booking': payload}, 200
 
 
 @app.route('/api/trips/<trip_id>', methods=['DELETE'])

@@ -38,6 +38,8 @@ class SocketService {
       StreamController<Map<String, dynamic>>.broadcast();
   final _passengerBookedController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final _bookingDecisionController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _tripDeletedController =
       StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
@@ -74,6 +76,9 @@ class SocketService {
   /// Stream of passenger booking notifications for drivers.
   Stream<Map<String, dynamic>> get onPassengerBooked =>
       _passengerBookedController.stream;
+
+  Stream<Map<String, dynamic>> get onBookingDecision =>
+      _bookingDecisionController.stream;
 
   /// Stream of trip deletion events — `{"id": <trip_id>}` — broadcast when any
   /// driver (or the server) removes a trip. Passengers and drivers should
@@ -306,6 +311,21 @@ class SocketService {
       }
     });
 
+    socket.on('booking_decision', (data) {
+      debugPrint('[SocketService] booking_decision received: $data');
+      if (data is Map<String, dynamic>) {
+        _bookingDecisionController.add(data);
+      } else if (data is String) {
+        try {
+          _bookingDecisionController.add(
+            jsonDecode(data) as Map<String, dynamic>,
+          );
+        } catch (_) {
+          debugPrint('[SocketService] Failed to parse booking_decision data');
+        }
+      }
+    });
+
     // Trip deleted (broadcast when a driver removes a trip)
     socket.on('trip_deleted', (data) {
       debugPrint('[SocketService] trip_deleted received: $data');
@@ -498,6 +518,7 @@ class SocketService {
     _bookingConfirmedController.close();
     _tripUpdatedController.close();
     _passengerBookedController.close();
+    _bookingDecisionController.close();
     _tripDeletedController.close();
     _errorController.close();
   }

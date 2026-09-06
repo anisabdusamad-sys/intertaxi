@@ -164,6 +164,31 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> decideBooking({
+    required String bookingId,
+    required String driverId,
+    required bool approved,
+  }) async {
+    try {
+      final base = await resolveBaseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$base/api/bookings/$bookingId/decision'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'driver_id': driverId,
+              'decision': approved ? 'approved' : 'rejected',
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {'ok': false, 'error': 'Invalid server response'};
+    } catch (error) {
+      return {'ok': false, 'error': 'Server connection failed: $error'};
+    }
+  }
+
   /// Fetches trips from the backend, optionally filtered by the EXACT route.
   ///
   /// When [from] / [to] are provided they are sent as `?from=...&to=...`

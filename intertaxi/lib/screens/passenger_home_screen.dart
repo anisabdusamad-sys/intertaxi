@@ -336,6 +336,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   /// driver DELETED disappear from the мусофир results automatically.
 
   Timer? _refreshTimer;
+  StreamSubscription<Map<String, dynamic>>? _bookingDecisionSubscription;
 
   @override
   void initState() {
@@ -346,6 +347,18 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     _toCity = 'Кӯлоб';
 
     _connectPassengerSocket();
+    _bookingDecisionSubscription = SocketService.instance.onBookingDecision
+        .listen((message) {
+          if (message['passenger_phone']?.toString() != widget.passengerPhone ||
+              !mounted) {
+            return;
+          }
+          final text = message['decision_message']?.toString() ?? '';
+          if (text.isEmpty) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(text), duration: const Duration(seconds: 6)),
+          );
+        });
 
     // Keep an open results list in sync with the server: when any driver
     // deletes an announcement it disappears here without the user having to
@@ -393,6 +406,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     _refreshTimer = null;
 
     _positionSubscription?.cancel();
+    _bookingDecisionSubscription?.cancel();
 
     _flutterTts.stop();
 

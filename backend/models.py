@@ -77,6 +77,8 @@ class Booking(db.Model):
     passenger_phone = db.Column(db.String(32), nullable=False, default='')
     from_location = db.Column(db.String(256), nullable=False, default='')
     to_location = db.Column(db.String(256), nullable=False, default='')
+    status = db.Column(db.String(16), nullable=False, default='pending')
+    decision_message = db.Column(db.String(255), nullable=False, default='')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def to_dict(self):
@@ -88,5 +90,7 @@ class Booking(db.Model):
             'passenger_phone': self.passenger_phone,
             'from_location': self.from_location,
             'to_location': self.to_location,
+            'status': self.status,
+            'decision_message': self.decision_message,
             'created_at': self.created_at.isoformat() if self.created_at else '',
         }

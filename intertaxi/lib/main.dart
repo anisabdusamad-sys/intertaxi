@@ -2844,31 +2844,45 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           final message = _passengerMessages[index];
           final name = message['passenger_name']?.toString().trim();
           final passengerName = name == null || name.isEmpty ? 'Мусофир' : name;
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFDCE8FF)),
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F0FF),
-                  child: Icon(Icons.person_rounded, color: Color(0xFF0066FF)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '$passengerName ҷойи сафарро брон кард',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
+          return InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BookingDecisionScreen(
+                    booking: message,
+                    driverId: widget.driverPhone,
                   ),
                 ),
-              ],
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFDCE8FF)),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: Color(0xFFE8F0FF),
+                    child: Icon(Icons.person_rounded, color: Color(0xFF0066FF)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '$passengerName ҷойи сафарро брон кард',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                ],
+              ),
             ),
           );
         },
@@ -3464,6 +3478,113 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
             label: 'Профил',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class BookingDecisionScreen extends StatefulWidget {
+  final Map<String, dynamic> booking;
+  final String driverId;
+
+  const BookingDecisionScreen({
+    super.key,
+    required this.booking,
+    required this.driverId,
+  });
+
+  @override
+  State<BookingDecisionScreen> createState() => _BookingDecisionScreenState();
+}
+
+class _BookingDecisionScreenState extends State<BookingDecisionScreen> {
+  bool _sending = false;
+
+  Future<void> _decide(bool approved) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    final result = await ApiService.decideBooking(
+      bookingId: widget.booking['id']?.toString() ?? '',
+      driverId: widget.driverId,
+      approved: approved,
+    );
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (result['ok'] == true) {
+      Navigator.of(context).pop();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['error']?.toString() ?? 'Хатогӣ рӯй дод'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final passengerName = widget.booking['passenger_name']?.toString().trim();
+    final from = widget.booking['from_location']?.toString() ?? '';
+    final to = widget.booking['to_location']?.toString() ?? '';
+    final pending = widget.booking['status']?.toString() ?? 'pending';
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Дархости брон')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(
+              Icons.person_pin_circle_rounded,
+              size: 72,
+              color: Color(0xFF0066FF),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              passengerName == null || passengerName.isEmpty
+                  ? 'Мусофир'
+                  : passengerName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '$from → $to',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              pending == 'pending'
+                  ? 'Мусофир ҷойро брон кардан мехоҳад.'
+                  : 'Ин дархост аллакай ҷавоб гирифтааст.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: pending == 'pending' && !_sending
+                  ? () => _decide(true)
+                  : null,
+              child: const Text(
+                'Иҷозат',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: pending == 'pending' && !_sending
+                  ? () => _decide(false)
+                  : null,
+              child: const Text(
+                'Не',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
