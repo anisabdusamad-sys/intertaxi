@@ -34,6 +34,10 @@ class Trip(db.Model):
     to_location = db.Column(db.String(256), nullable=False)
     departure_time = db.Column(db.String(64), nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False, default=0)
+    car_brand = db.Column(db.String(80), nullable=False, default='')
+    car_model = db.Column(db.String(80), nullable=False, default='')
+    car_color = db.Column(db.String(40), nullable=False, default='')
+    car_plate = db.Column(db.String(40), nullable=False, default='')
     price = db.Column(db.Integer, nullable=False, default=0)
     available_seats = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.String(16), nullable=False, default='active')
@@ -50,6 +54,10 @@ class Trip(db.Model):
             'to_location': self.to_location,
             'departure_time': self.departure_time,
             'duration_minutes': self.duration_minutes,
+            'car_brand': self.car_brand,
+            'car_model': self.car_model,
+            'car_color': self.car_color,
+            'car_plate': self.car_plate,
             'price': self.price,
             'available_seats': self.available_seats,
             'status': self.status,

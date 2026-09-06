@@ -58,6 +58,21 @@ def create_tables():
                 )
             )
             db.session.commit()
+        new_columns = {
+            'car_brand': "VARCHAR(80) DEFAULT '' NOT NULL",
+            'car_model': "VARCHAR(80) DEFAULT '' NOT NULL",
+            'car_color': "VARCHAR(40) DEFAULT '' NOT NULL",
+            'car_plate': "VARCHAR(40) DEFAULT '' NOT NULL",
+        }
+        for column_name, definition in new_columns.items():
+            if column_name not in existing_columns:
+                db.session.execute(
+                    text(
+                        f'ALTER TABLE trips ADD COLUMN '
+                        f'{column_name} {definition}'
+                    )
+                )
+        db.session.commit()
 
 
 create_tables()
@@ -158,6 +173,10 @@ def _create_trip(data, fallback_driver_id='rest'):
         to_location=data['to_location'].strip(),
         departure_time=data['departure_time'],
         duration_minutes=int(data.get('duration_minutes') or 0),
+        car_brand=str(data.get('car_brand') or '').strip(),
+        car_model=str(data.get('car_model') or '').strip(),
+        car_color=str(data.get('car_color') or '').strip(),
+        car_plate=str(data.get('car_plate') or '').strip(),
         price=price,
         available_seats=seats,
         status='active',
