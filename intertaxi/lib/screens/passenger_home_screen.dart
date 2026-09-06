@@ -337,6 +337,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
 
   Timer? _refreshTimer;
   StreamSubscription<Map<String, dynamic>>? _bookingDecisionSubscription;
+  final List<Map<String, dynamic>> _bookingMessages = [];
+  int _unreadBookingMessages = 0;
 
   @override
   void initState() {
@@ -347,17 +349,14 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     _toCity = 'Кӯлоб';
 
     _connectPassengerSocket();
+    _loadPassengerBookingMessages();
     _bookingDecisionSubscription = SocketService.instance.onBookingDecision
         .listen((message) {
           if (message['passenger_phone']?.toString() != widget.passengerPhone ||
               !mounted) {
             return;
           }
-          final text = message['decision_message']?.toString() ?? '';
-          if (text.isEmpty) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(text), duration: const Duration(seconds: 6)),
-          );
+          setState(() => _addBookingMessage(message, unread: true));
         });
 
     // Keep an open results list in sync with the server: when any driver
@@ -398,6 +397,37 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
       userId: widget.passengerPhone,
       role: 'passenger',
     );
+  }
+
+  Future<void> _loadPassengerBookingMessages() async {
+    final messages = await ApiService.fetchPassengerBookings(
+      widget.passengerPhone,
+    );
+    if (!mounted) return;
+    setState(() {
+      for (final message in messages.reversed) {
+        _addBookingMessage(message);
+      }
+    });
+  }
+
+  void _addBookingMessage(Map<String, dynamic> message, {bool unread = false}) {
+    final id = message['id']?.toString();
+    final index = _bookingMessages.indexWhere(
+      (item) => item['id']?.toString() == id,
+    );
+    if (index >= 0) {
+      _bookingMessages[index] = message;
+    } else {
+      _bookingMessages.insert(0, message);
+    }
+    if (unread && message['decision_message']?.toString().isNotEmpty == true) {
+      _unreadBookingMessages++;
+      final text = message['decision_message']!.toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text), duration: const Duration(seconds: 6)),
+      );
+    }
   }
 
   @override
@@ -567,6 +597,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
+          if (_unreadBookingMessages > 0) _buildUnreadBookingBanner(),
           const SizedBox(height: 8),
 
           // Greeting — clean, no profile icon (profile lives in its own tab)
@@ -785,6 +816,60 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
           // Search results (driver list) — rendered below the search card
           _buildSearchResultsSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUnreadBookingBanner() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = 3;
+          _mountedTabs.add(3);
+          _unreadBookingMessages = 0;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0B5CFF), Color(0xFF2D8CFF)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0B5CFF).withValues(alpha: 0.22),
+              blurRadius: 16,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.notifications_active_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Паёми нав аз ронанда омад',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white70,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1550,102 +1635,66 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   Widget _buildRouteStatsCard() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
-
             blurRadius: 20,
-
             offset: const Offset(0, 6),
           ),
         ],
       ),
-
       child: Builder(
         builder: (context) {
-          // Default to the total OSRM route figures; only show remaining
-
-          // distance/time after a valid live GPS position has moved onto the route.
-
-          final bool hasOsrmTotals = _activeDistance > 0 && _activeDuration > 0;
-
+          final hasOsrmTotals = _activeDistance > 0 && _activeDuration > 0;
           final remaining = _routeProgress ?? _computeRemaining();
-
-          final String distanceLabel;
-
-          final String distanceValue;
-
-          final String durationLabel;
-
-          final String durationValue;
-
-          final String arrivalValue;
-
+          String distanceLabel;
+          String distanceValue;
+          String durationLabel;
+          String durationValue;
+          String arrivalValue;
           if (remaining != null &&
               remaining.remainingMeters > 0 &&
               remaining.remainingSeconds > 0) {
             distanceLabel = 'Масофаи монда';
-
             distanceValue =
                 '${_formatDistance(remaining.remainingMeters)} монд';
-
             durationLabel = 'Вақти монда';
-
             durationValue =
                 '${_formatDuration(remaining.remainingSeconds)} монд';
-
             arrivalValue = _formatArrival(remaining.remainingSeconds);
           } else {
             distanceLabel = 'Масофа';
-
             distanceValue = hasOsrmTotals
                 ? _formatDistance(_activeDistance)
                 : '—';
-
             durationLabel = 'Вақти сафар';
-
             durationValue = hasOsrmTotals
                 ? _formatDuration(_activeDuration)
                 : '—';
-
             arrivalValue = hasOsrmTotals
                 ? _formatArrival(_activeDuration)
                 : '—';
           }
-
           return Row(
             children: [
               _buildStatChip(
                 icon: Icons.route_rounded,
-
                 label: distanceLabel,
-
                 value: distanceValue,
               ),
-
               _buildStatDivider(),
-
               _buildStatChip(
                 icon: Icons.schedule_rounded,
-
                 label: durationLabel,
-
                 value: durationValue,
               ),
-
               _buildStatDivider(),
-
               _buildStatChip(
                 icon: Icons.flag_rounded,
-
                 label: 'Вақти расидан',
-
                 value: arrivalValue,
               ),
             ],
@@ -2322,6 +2371,102 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   // ==================== MESSAGES TAB ====================
 
   Widget _buildMessagesTab() {
+    if (_bookingMessages.isNotEmpty) {
+      return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+        itemCount: _bookingMessages.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final message = _bookingMessages[index];
+          final status = message['status']?.toString() ?? 'pending';
+          final approved = status == 'approved';
+          final rejected = status == 'rejected';
+          final color = approved
+              ? const Color(0xFF159957)
+              : rejected
+              ? const Color(0xFFD64545)
+              : const Color(0xFF1769E0);
+          final title = approved
+              ? 'Брон тасдиқ шуд'
+              : rejected
+              ? 'Брон рад шуд'
+              : 'Дархости брон';
+          final detail = message['decision_message']?.toString() ?? '';
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withValues(alpha: 0.16)),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    approved
+                        ? Icons.check_rounded
+                        : rejected
+                        ? Icons.close_rounded
+                        : Icons.hourglass_top_rounded,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        detail.isNotEmpty
+                            ? detail
+                            : 'Ҷавоби ронанда ҳоло интизор аст.',
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          height: 1.35,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        '${message['from_location'] ?? ''} → ${message['to_location'] ?? ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

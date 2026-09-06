@@ -2844,40 +2844,92 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           final message = _passengerMessages[index];
           final name = message['passenger_name']?.toString().trim();
           final passengerName = name == null || name.isEmpty ? 'Мусофир' : name;
+          final requestedSeats =
+              int.tryParse(message['requested_seats']?.toString() ?? '') ?? 1;
+          final status = message['status']?.toString() ?? 'pending';
+          final statusColor = status == 'approved'
+              ? const Color(0xFF159957)
+              : status == 'rejected'
+              ? const Color(0xFFD64545)
+              : const Color(0xFF1769E0);
+          final statusText = status == 'approved'
+              ? 'Иҷозат дода шуд'
+              : status == 'rejected'
+              ? 'Рад карда шуд'
+              : 'Интизорӣ';
           return InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => BookingDecisionScreen(
-                    booking: message,
-                    driverId: widget.driverPhone,
-                  ),
-                ),
-              );
+            onTap: () async {
+              final updated = await Navigator.of(context)
+                  .push<Map<String, dynamic>>(
+                    MaterialPageRoute(
+                      builder: (_) => BookingDecisionScreen(
+                        booking: message,
+                        driverId: widget.driverPhone,
+                      ),
+                    ),
+                  );
+              if (!mounted || updated == null) return;
+              setState(() {
+                final messageId = updated['id']?.toString();
+                final messageIndex = _passengerMessages.indexWhere(
+                  (item) => item['id']?.toString() == messageId,
+                );
+                if (messageIndex >= 0)
+                  _passengerMessages[messageIndex] = updated;
+              });
             },
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFDCE8FF)),
+                border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withValues(alpha: 0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Color(0xFFE8F0FF),
-                    child: Icon(Icons.person_rounded, color: Color(0xFF0066FF)),
+                  CircleAvatar(
+                    backgroundColor: statusColor.withValues(alpha: 0.1),
+                    child: Icon(Icons.person_rounded, color: statusColor),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      '$passengerName ҷойи сафарро брон кард',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$passengerName ҷойи сафарро брон кард',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '$requestedSeats ҷой мехоҳад',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const Icon(Icons.chevron_right_rounded, color: Colors.grey),
@@ -3511,7 +3563,10 @@ class _BookingDecisionScreenState extends State<BookingDecisionScreen> {
     if (!mounted) return;
     setState(() => _sending = false);
     if (result['ok'] == true) {
-      Navigator.of(context).pop();
+      final booking = result['booking'];
+      Navigator.of(
+        context,
+      ).pop(booking is Map<String, dynamic> ? booking : widget.booking);
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -3528,6 +3583,8 @@ class _BookingDecisionScreenState extends State<BookingDecisionScreen> {
     final from = widget.booking['from_location']?.toString() ?? '';
     final to = widget.booking['to_location']?.toString() ?? '';
     final pending = widget.booking['status']?.toString() ?? 'pending';
+    final requestedSeats =
+        int.tryParse(widget.booking['requested_seats']?.toString() ?? '') ?? 1;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Дархости брон')),
@@ -3554,6 +3611,12 @@ class _BookingDecisionScreenState extends State<BookingDecisionScreen> {
               '$from → $to',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '$requestedSeats ҷой гирифтан мехоҳад',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
             Text(

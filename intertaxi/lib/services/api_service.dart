@@ -125,12 +125,33 @@ class ApiService {
     return const [];
   }
 
+  static Future<List<Map<String, dynamic>>> fetchPassengerBookings(
+    String passengerPhone,
+  ) async {
+    try {
+      final base = await resolveBaseUrl();
+      final uri = Uri.parse(
+        '$base/api/bookings',
+      ).replace(queryParameters: {'passenger_phone': passengerPhone});
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final bookings = data['bookings'] as List<dynamic>? ?? const [];
+        return bookings.whereType<Map<String, dynamic>>().toList();
+      }
+    } catch (_) {
+      // ignore transient network errors
+    }
+    return const [];
+  }
+
   /// Books a trip through the reliable REST API. The backend persists the
   /// booking and broadcasts the driver notification after committing it.
   static Future<Map<String, dynamic>> createBooking({
     required String tripId,
     required String passengerName,
     required String passengerPhone,
+    required int requestedSeats,
   }) async {
     try {
       final base = await resolveBaseUrl();
@@ -151,6 +172,7 @@ class ApiService {
               'trip_id': tripId,
               'passenger_name': passengerName,
               'passenger_phone': passengerPhone,
+              'requested_seats': requestedSeats,
             }),
           )
           .timeout(const Duration(seconds: 45));

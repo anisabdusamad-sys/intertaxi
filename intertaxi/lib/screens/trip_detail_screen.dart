@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
@@ -26,8 +27,105 @@ class TripDetailScreen extends StatefulWidget {
   State<TripDetailScreen> createState() => _TripDetailScreenState();
 }
 
+class BookingSentScreen extends StatelessWidget {
+  final int requestedSeats;
+  final String from;
+  final String to;
+
+  const BookingSentScreen({
+    super.key,
+    required this.requestedSeats,
+    required this.from,
+    required this.to,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.offWhite,
+      appBar: AppBar(
+        title: const Text('Брон фиристода шуд'),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    size: 42,
+                    color: AppColors.primaryBlue,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Дархости шумо фиристода шуд',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '$requestedSeats ҷой • $from → $to',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Лутфан мунтазир монед. Ронанда ба дархости шумо ҷавоб медиҳад.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).popUntil((route) => route.isFirst),
+                    child: const Text('Ба саҳифаи асосӣ'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TripDetailScreenState extends State<TripDetailScreen> {
   bool _booking = false;
+  int _requestedSeats = 1;
 
   // --- Field accessors with safe fallbacks ---------------------------------
 
@@ -124,11 +222,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       tripId: _id,
       passengerName: widget.passengerName,
       passengerPhone: widget.passengerPhone,
+      requestedSeats: _requestedSeats,
     );
     if (!mounted) return;
     setState(() => _booking = false);
     if (result['ok'] == true) {
-      Navigator.of(context).pop(true);
+      await HapticFeedback.mediumImpact();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => BookingSentScreen(
+            requestedSeats: _requestedSeats,
+            from: _from,
+            to: _to,
+          ),
+        ),
+      );
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -158,6 +267,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             _buildRouteCard(),
             const SizedBox(height: 12),
             _buildInfoCard(),
+            const SizedBox(height: 12),
+            _buildSeatSelector(),
             if (_hasVehicleDetails) ...[
               const SizedBox(height: 12),
               _buildVehicleCard(),
@@ -200,6 +311,44 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSeatSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primaryBlue.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_seat_rounded, color: AppColors.primaryBlue),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Чанд ҷой брон мекунед?',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ),
+          DropdownButton<int>(
+            value: _requestedSeats,
+            items: List.generate(
+              _seatsInt,
+              (index) => DropdownMenuItem(
+                value: index + 1,
+                child: Text('${index + 1} ҷой'),
+              ),
+            ),
+            onChanged: _booking
+                ? null
+                : (value) => setState(() => _requestedSeats = value ?? 1),
+          ),
+        ],
       ),
     );
   }
