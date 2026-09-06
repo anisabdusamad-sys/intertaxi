@@ -16,7 +16,7 @@ import uuid
 from flask import Flask, request, render_template_string
 from flask_socketio import SocketIO, emit
 from sqlalchemy import inspect, text
-from models import db, Trip
+from models import db, Trip, Booking
 
 # ---------------------------------------------------------------------------
 # App & DB setup
@@ -244,6 +244,55 @@ def book_trip_rest(trip_id):
     return {'trip': trip.to_dict()}, 200
 
 
+def _create_booking(data):
+    """Persist a booking and notify connected drivers after commit."""
+    if not isinstance(data, dict):
+        return None, 'Invalid payload — expected JSON object'
+    trip_id = str(data.get('trip_id', '')).strip()
+    trip = db.session.get(Trip, trip_id) if trip_id else None
+    if not trip:
+        return None, 'Trip not found'
+    if trip.status != 'active' or trip.available_seats <= 0:
+        return None, 'No seats available on this trip'
+
+    trip.available_seats -= 1
+    if trip.available_seats == 0:
+        trip.status = 'booked'
+    booking = Booking(
+        trip_id=trip.id,
+        driver_id=trip.driver_id,
+        passenger_name=str(data.get('passenger_name', '')).strip(),
+        passenger_phone=str(data.get('passenger_phone', '')).strip(),
+        from_location=trip.from_location,
+        to_location=trip.to_location,
+    )
+    db.session.add(booking)
+    db.session.commit()
+    socketio.emit('trip_updated', trip.to_dict())
+    socketio.emit('passenger_booked', booking.to_dict())
+    return {'booking': booking.to_dict(), 'trip': trip.to_dict()}, None
+
+
+@app.route('/api/bookings', methods=['GET'])
+def get_bookings_rest():
+    driver_id = request.args.get('driver_id', '').strip()
+    if not driver_id:
+        return {'bookings': []}, 200
+    bookings = Booking.query.filter_by(driver_id=driver_id).order_by(
+        Booking.created_at.desc()
+    ).all()
+    return {'bookings': [booking.to_dict() for booking in bookings]}, 200
+
+
+@app.route('/api/bookings', methods=['POST'])
+def create_booking_rest():
+    result, error = _create_booking(request.get_json(silent=True) or {})
+    if error:
+        status = 404 if error == 'Trip not found' else 409
+        return {'ok': False, 'error': error}, status
+    return {'ok': True, **result}, 201
+
+
 @app.route('/api/trips/<trip_id>', methods=['DELETE'])
 def delete_trip_rest(trip_id):
     """PERMANENTLY delete a trip announcement (REST).
@@ -374,40 +423,27 @@ def handle_book_trip(data):
         emit('error', {'message': 'Invalid payload — expected JSON object'})
         return
 
-    trip_id = data.get('trip_id', '').strip()
-    if not trip_id:
-        emit('error', {'message': 'trip_id is required'})
+    result, error = _create_booking(data)
+    if error:
+        emit('error', {'message': error})
         return
-
-    trip = Trip.query.get(trip_id)
-    if not trip:
-        emit('error', {'message': 'Trip not found'})
-        return
-
-    if trip.status != 'active' or trip.available_seats <= 0:
-        emit('error', {'message': 'No seats available on this trip'})
-        return
-
-    trip.available_seats -= 1
-    if trip.available_seats == 0:
-        trip.status = 'booked'
-    db.session.commit()
+    booking = result['booking']
+    trip = result['trip']
 
     logger.info(
-        f'Trip {trip.id} booked by {data.get("passenger_name", "unknown")} — '
-        f'{trip.available_seats} seat(s) remaining'
+        f'Trip {trip["id"]} booked by {booking["passenger_name"] or "unknown"}'
     )
 
     # Confirm to the booker
     emit('booking_confirmed', {
-        'trip_id': trip.id,
-        'trip': trip.to_dict(),
-        'passenger_name': data.get('passenger_name', ''),
-        'passenger_phone': data.get('passenger_phone', ''),
+        'trip_id': trip['id'],
+        'trip': trip,
+        'passenger_name': booking['passenger_name'],
+        'passenger_phone': booking['passenger_phone'],
     })
 
     # Broadcast updated trip to everyone so lists stay in sync
-    emit('trip_updated', trip.to_dict(), broadcast=True)
+    emit('trip_updated', trip, broadcast=True)
 
 
 # ---------------------------------------------------------------------------

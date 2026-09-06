@@ -63,3 +63,30 @@ class Trip(db.Model):
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else '',
         }
+
+
+class Booking(db.Model):
+    """A passenger booking stored for the driver's Messages page."""
+
+    __tablename__ = 'bookings'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    trip_id = db.Column(db.String(36), nullable=False, index=True)
+    driver_id = db.Column(db.String(128), nullable=False, index=True)
+    passenger_name = db.Column(db.String(128), nullable=False, default='')
+    passenger_phone = db.Column(db.String(32), nullable=False, default='')
+    from_location = db.Column(db.String(256), nullable=False, default='')
+    to_location = db.Column(db.String(256), nullable=False, default='')
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'trip_id': self.trip_id,
+            'driver_id': self.driver_id,
+            'passenger_name': self.passenger_name,
+            'passenger_phone': self.passenger_phone,
+            'from_location': self.from_location,
+            'to_location': self.to_location,
+            'created_at': self.created_at.isoformat() if self.created_at else '',
+        }
