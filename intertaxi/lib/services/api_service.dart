@@ -134,6 +134,15 @@ class ApiService {
   }) async {
     try {
       final base = await resolveBaseUrl();
+      // Render's free service may sleep. Wake it before sending the booking
+      // request so the passenger does not time out during cold start.
+      try {
+        await http
+            .get(Uri.parse('$base/api/health'))
+            .timeout(const Duration(seconds: 45));
+      } catch (_) {
+        // The booking request below remains the source of truth.
+      }
       final response = await http
           .post(
             Uri.parse('$base/api/bookings'),
@@ -144,7 +153,7 @@ class ApiService {
               'passenger_phone': passengerPhone,
             }),
           )
-          .timeout(const Duration(seconds: 12));
+          .timeout(const Duration(seconds: 45));
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
         return decoded;
