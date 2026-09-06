@@ -2372,99 +2372,106 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
 
   Widget _buildMessagesTab() {
     if (_bookingMessages.isNotEmpty) {
-      return ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-        itemCount: _bookingMessages.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final message = _bookingMessages[index];
-          final status = message['status']?.toString() ?? 'pending';
-          final approved = status == 'approved';
-          final rejected = status == 'rejected';
-          final color = approved
-              ? const Color(0xFF159957)
-              : rejected
-              ? const Color(0xFFD64545)
-              : const Color(0xFF1769E0);
-          final title = approved
-              ? 'Брон тасдиқ шуд'
-              : rejected
-              ? 'Брон рад шуд'
-              : 'Дархости брон';
-          final detail = message['decision_message']?.toString() ?? '';
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withValues(alpha: 0.16)),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
+      return Column(
+        children: [
+          _buildPassengerMessageHeader(),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              itemCount: _bookingMessages.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final message = _bookingMessages[index];
+                final status = message['status']?.toString() ?? 'pending';
+                final approved = status == 'approved';
+                final rejected = status == 'rejected';
+                final color = approved
+                    ? const Color(0xFF159957)
+                    : rejected
+                    ? const Color(0xFFD64545)
+                    : const Color(0xFF1769E0);
+                final title = approved
+                    ? 'Брон тасдиқ шуд'
+                    : rejected
+                    ? 'Брон рад шуд'
+                    : 'Дархости брон';
+                final detail = message['decision_message']?.toString() ?? '';
+                return Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color.withValues(alpha: 0.16)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  child: Icon(
-                    approved
-                        ? Icons.check_rounded
-                        : rejected
-                        ? Icons.close_rounded
-                        : Icons.hourglass_top_rounded,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          approved
+                              ? Icons.check_rounded
+                              : rejected
+                              ? Icons.close_rounded
+                              : Icons.hourglass_top_rounded,
                           color: color,
                         ),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        detail.isNotEmpty
-                            ? detail
-                            : 'Ҷавоби ронанда ҳоло интизор аст.',
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          height: 1.35,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        '${message['from_location'] ?? ''} → ${message['to_location'] ?? ''}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              detail.isNotEmpty
+                                  ? detail
+                                  : 'Ҷавоби ронанда ҳоло интизор аст.',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                height: 1.35,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              '${message['from_location'] ?? ''} → ${message['to_location'] ?? ''}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       );
     }
     return Center(
@@ -2498,6 +2505,40 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPassengerMessageHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 12, 8),
+      child: Row(
+        children: [
+          const Text(
+            'Паёмҳо',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: _clearPassengerMessages,
+            tooltip: 'Ҳамаашро тоза кардан',
+            icon: const Icon(
+              Icons.delete_sweep_rounded,
+              color: Color(0xFFD64545),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearPassengerMessages() async {
+    final deleted = await ApiService.deleteAllBookings(
+      passengerPhone: widget.passengerPhone,
+    );
+    if (!mounted || !deleted) return;
+    setState(() {
+      _bookingMessages.clear();
+      _unreadBookingMessages = 0;
+    });
   }
 
   // ==================== PROFILE TAB ====================

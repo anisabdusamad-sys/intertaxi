@@ -331,6 +331,22 @@ def create_booking_rest():
     return {'ok': True, **result}, 201
 
 
+@app.route('/api/bookings', methods=['DELETE'])
+def delete_bookings_rest():
+    driver_id = request.args.get('driver_id', '').strip()
+    passenger_phone = request.args.get('passenger_phone', '').strip()
+    if not driver_id and not passenger_phone:
+        return {'ok': False, 'error': 'User identifier is required'}, 400
+    query = Booking.query
+    if driver_id:
+        query = query.filter_by(driver_id=driver_id)
+    if passenger_phone:
+        query = query.filter_by(passenger_phone=passenger_phone)
+    deleted = query.delete(synchronize_session=False)
+    db.session.commit()
+    return {'ok': True, 'deleted': deleted}, 200
+
+
 @app.route('/api/bookings/<booking_id>/decision', methods=['POST'])
 def decide_booking_rest(booking_id):
     """Driver accepts or rejects a passenger booking."""

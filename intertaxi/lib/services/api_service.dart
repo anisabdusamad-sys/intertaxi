@@ -145,6 +145,29 @@ class ApiService {
     return const [];
   }
 
+  static Future<bool> deleteAllBookings({
+    String? driverId,
+    String? passengerPhone,
+  }) async {
+    try {
+      final base = await resolveBaseUrl();
+      final query = <String, String>{
+        if (driverId != null && driverId.isNotEmpty) 'driver_id': driverId,
+        if (passengerPhone != null && passengerPhone.isNotEmpty)
+          'passenger_phone': passengerPhone,
+      };
+      final uri = Uri.parse(
+        '$base/api/bookings',
+      ).replace(queryParameters: query);
+      final response = await http
+          .delete(uri)
+          .timeout(const Duration(seconds: 20));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Books a trip through the reliable REST API. The backend persists the
   /// booking and broadcasts the driver notification after committing it.
   static Future<Map<String, dynamic>> createBooking({

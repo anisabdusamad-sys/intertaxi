@@ -2124,6 +2124,25 @@ class Order {
     this.carPlate = '',
   });
 
+  Order copyWith({int? seats}) => Order(
+    id: id,
+    fromLocation: fromLocation,
+    toLocation: toLocation,
+    price: price,
+    duration: duration,
+    durationMinutes: durationMinutes,
+    seats: seats ?? this.seats,
+    notes: notes,
+    createdAt: createdAt,
+    departureTime: departureTime,
+    driverName: driverName,
+    driverPhone: driverPhone,
+    carBrand: carBrand,
+    carModel: carModel,
+    carColor: carColor,
+    carPlate: carPlate,
+  );
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'fromLocation': fromLocation,
@@ -2171,6 +2190,18 @@ Future<void> saveOrder(Order order) async {
   await prefs.setString(
     'saved_orders',
     jsonEncode(orders.map((o) => o.toJson()).toList()),
+  );
+}
+
+Future<void> updateOrderSeats(String orderId, int seats) async {
+  final prefs = await SharedPreferences.getInstance();
+  final orders = await loadOrders();
+  final index = orders.indexWhere((order) => order.id == orderId);
+  if (index < 0) return;
+  orders[index] = orders[index].copyWith(seats: seats);
+  await prefs.setString(
+    'saved_orders',
+    jsonEncode(orders.map((order) => order.toJson()).toList()),
   );
 }
 
@@ -2283,6 +2314,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   List<Order> _orders = [];
   final List<Map<String, dynamic>> _passengerMessages = [];
   StreamSubscription<Map<String, dynamic>>? _passengerBookedSubscription;
+  StreamSubscription<Map<String, dynamic>>? _tripUpdatedSubscription;
 
   @override
   void initState() {
@@ -2299,6 +2331,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           if (!mounted) return;
           setState(() => _passengerMessages.insert(0, message));
         });
+    _tripUpdatedSubscription = SocketService.instance.onTripUpdated.listen(
+      (trip) => _applyUpdatedTripSeats(trip),
+    );
     await SocketService.instance.connect(
       userId: widget.driverPhone,
       role: 'driver',
@@ -2320,6 +2355,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     });
   }
 
+  Future<void> _applyUpdatedTripSeats(Map<String, dynamic> trip) async {
+    final tripId = trip['id']?.toString();
+    final seats = int.tryParse(trip['available_seats']?.toString() ?? '');
+    if (tripId == null || seats == null) return;
+    await updateOrderSeats(tripId, seats);
+    if (!mounted) return;
+    setState(() {
+      final index = _orders.indexWhere((order) => order.id == tripId);
+      if (index >= 0) _orders[index] = _orders[index].copyWith(seats: seats);
+    });
+  }
+
   Future<void> _loadOrders() async {
     final orders = await loadOrders();
     if (!mounted) return;
@@ -2330,6 +2377,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _passengerBookedSubscription?.cancel();
+    _tripUpdatedSubscription?.cancel();
     SocketService.instance.disconnect();
     super.dispose();
   }
@@ -2836,108 +2884,125 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   Widget _buildMessagesTab() {
     if (_passengerMessages.isNotEmpty) {
-      return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _passengerMessages.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final message = _passengerMessages[index];
-          final name = message['passenger_name']?.toString().trim();
-          final passengerName = name == null || name.isEmpty ? 'Мусофир' : name;
-          final requestedSeats =
-              int.tryParse(message['requested_seats']?.toString() ?? '') ?? 1;
-          final status = message['status']?.toString() ?? 'pending';
-          final statusColor = status == 'approved'
-              ? const Color(0xFF159957)
-              : status == 'rejected'
-              ? const Color(0xFFD64545)
-              : const Color(0xFF1769E0);
-          final statusText = status == 'approved'
-              ? 'Иҷозат дода шуд'
-              : status == 'rejected'
-              ? 'Рад карда шуд'
-              : 'Интизорӣ';
-          return InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () async {
-              final updated = await Navigator.of(context)
-                  .push<Map<String, dynamic>>(
-                    MaterialPageRoute(
-                      builder: (_) => BookingDecisionScreen(
-                        booking: message,
-                        driverId: widget.driverPhone,
+      return Column(
+        children: [
+          _buildMessageHeader(title: 'Паёмҳо', onClear: _clearDriverMessages),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              itemCount: _passengerMessages.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final message = _passengerMessages[index];
+                final name = message['passenger_name']?.toString().trim();
+                final passengerName = name == null || name.isEmpty
+                    ? 'Мусофир'
+                    : name;
+                final requestedSeats =
+                    int.tryParse(
+                      message['requested_seats']?.toString() ?? '',
+                    ) ??
+                    1;
+                final status = message['status']?.toString() ?? 'pending';
+                final statusColor = status == 'approved'
+                    ? const Color(0xFF159957)
+                    : status == 'rejected'
+                    ? const Color(0xFFD64545)
+                    : const Color(0xFF1769E0);
+                final statusText = status == 'approved'
+                    ? 'Иҷозат дода шуд'
+                    : status == 'rejected'
+                    ? 'Рад карда шуд'
+                    : 'Интизорӣ';
+                return InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () async {
+                    final updated = await Navigator.of(context)
+                        .push<Map<String, dynamic>>(
+                          MaterialPageRoute(
+                            builder: (_) => BookingDecisionScreen(
+                              booking: message,
+                              driverId: widget.driverPhone,
+                            ),
+                          ),
+                        );
+                    if (!mounted || updated == null) return;
+                    setState(() {
+                      final messageId = updated['id']?.toString();
+                      final messageIndex = _passengerMessages.indexWhere(
+                        (item) => item['id']?.toString() == messageId,
+                      );
+                      if (messageIndex >= 0)
+                        _passengerMessages[messageIndex] = updated;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.2),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withValues(alpha: 0.08),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                  );
-              if (!mounted || updated == null) return;
-              setState(() {
-                final messageId = updated['id']?.toString();
-                final messageIndex = _passengerMessages.indexWhere(
-                  (item) => item['id']?.toString() == messageId,
-                );
-                if (messageIndex >= 0)
-                  _passengerMessages[messageIndex] = updated;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: statusColor.withValues(alpha: 0.08),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: statusColor.withValues(alpha: 0.1),
-                    child: Icon(Icons.person_rounded, color: statusColor),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          '$passengerName ҷойи сафарро брон кард',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
+                        CircleAvatar(
+                          backgroundColor: statusColor.withValues(alpha: 0.1),
+                          child: Icon(Icons.person_rounded, color: statusColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$passengerName ҷойи сафарро брон кард',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '$requestedSeats ҷой мехоҳад',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                statusText,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '$requestedSeats ҷой мехоҳад',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: statusColor,
-                          ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.grey,
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       );
     }
     return Center(
@@ -2957,6 +3022,40 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildMessageHeader({
+    required String title,
+    required VoidCallback onClear,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 12, 8),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: onClear,
+            tooltip: 'Ҳамаашро тоза кардан',
+            icon: const Icon(
+              Icons.delete_sweep_rounded,
+              color: Color(0xFFD64545),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearDriverMessages() async {
+    final deleted = await ApiService.deleteAllBookings(
+      driverId: widget.driverPhone,
+    );
+    if (!mounted || !deleted) return;
+    setState(() => _passengerMessages.clear());
   }
 
   String _cleanDebugText(String value) {

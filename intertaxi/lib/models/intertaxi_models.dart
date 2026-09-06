@@ -40,6 +40,25 @@ class Order {
     this.carPlate = '',
   });
 
+  Order copyWith({int? seats}) => Order(
+    id: id,
+    fromLocation: fromLocation,
+    toLocation: toLocation,
+    price: price,
+    duration: duration,
+    durationMinutes: durationMinutes,
+    seats: seats ?? this.seats,
+    notes: notes,
+    createdAt: createdAt,
+    departureTime: departureTime,
+    driverName: driverName,
+    driverPhone: driverPhone,
+    carBrand: carBrand,
+    carModel: carModel,
+    carColor: carColor,
+    carPlate: carPlate,
+  );
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'fromLocation': fromLocation,
@@ -87,6 +106,18 @@ Future<void> saveOrder(Order order) async {
   await prefs.setString(
     'saved_orders',
     jsonEncode(orders.map((o) => o.toJson()).toList()),
+  );
+}
+
+Future<void> updateOrderSeats(String orderId, int seats) async {
+  final prefs = await SharedPreferences.getInstance();
+  final orders = await loadOrders();
+  final index = orders.indexWhere((order) => order.id == orderId);
+  if (index < 0) return;
+  orders[index] = orders[index].copyWith(seats: seats);
+  await prefs.setString(
+    'saved_orders',
+    jsonEncode(orders.map((order) => order.toJson()).toList()),
   );
 }
 
