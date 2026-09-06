@@ -57,6 +57,7 @@ class DriverRide {
     } on FormatException {
       departure = DateTime.now();
     }
+    final durationMinutes = _readDurationMinutes(map);
     return DriverRide(
       id: map['id']?.toString() ?? '',
       driverName: map['driver_name']?.toString() ?? '',
@@ -70,11 +71,22 @@ class DriverRide {
       availableSeats:
           int.tryParse(map['available_seats']?.toString() ?? '') ?? 0,
       departureTime: departure,
-      durationMinutes:
-          int.tryParse(map['duration_minutes']?.toString() ?? '') ?? 0,
+      durationMinutes: durationMinutes,
       route: [from, to],
       fullRoutePrice: int.tryParse(map['price']?.toString() ?? '') ?? 0,
     );
+  }
+
+  static int _readDurationMinutes(Map<String, dynamic> map) {
+    final raw = map['duration_minutes'] ?? map['durationMinutes'];
+    final numeric = int.tryParse(raw?.toString() ?? '');
+    if (numeric != null && numeric > 0) return numeric;
+
+    final label = map['duration']?.toString() ?? '';
+    final hours = RegExp(r'(\d+)\s*(?:соат|час|hour)').firstMatch(label);
+    final minutes = RegExp(r'(\d+)\s*(?:дақиқа|мин|minute)').firstMatch(label);
+    return (int.tryParse(hours?.group(1) ?? '') ?? 0) * 60 +
+        (int.tryParse(minutes?.group(1) ?? '') ?? 0);
   }
 
   /// Serializes back to the backend trip JSON shape so the ride can be
@@ -135,14 +147,13 @@ class DriverRide {
     return route.sublist(originIdx, destIdx + 1);
   }
 
-  /// Human-friendly departure date and time, e.g. "08:45 05.09.26".
+  /// Human-friendly departure date and time, e.g. "08:45 05.09.2026".
   String get departureLabel {
     final day = departureTime.day.toString().padLeft(2, '0');
     final month = departureTime.month.toString().padLeft(2, '0');
     final h = departureTime.hour.toString().padLeft(2, '0');
     final m = departureTime.minute.toString().padLeft(2, '0');
-    final year = (departureTime.year % 100).toString().padLeft(2, '0');
-    return '$h:$m $day.$month.$year';
+    return '$h:$m $day.$month.${departureTime.year}';
   }
 
   /// Human-friendly trip duration based on the canonical minute value.

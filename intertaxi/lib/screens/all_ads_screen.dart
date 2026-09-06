@@ -23,6 +23,7 @@ class _AdItem {
   final String toLocation;
   final String price;
   final int seats;
+  final int durationMinutes;
   final DateTime? departureTime;
   final DateTime? createdAt;
   final String driverName;
@@ -40,6 +41,7 @@ class _AdItem {
     required this.toLocation,
     required this.price,
     required this.seats,
+    required this.durationMinutes,
     required this.departureTime,
     required this.createdAt,
     required this.driverName,
@@ -59,6 +61,7 @@ class _AdItem {
       toLocation: o.toLocation,
       price: o.price,
       seats: o.seats,
+      durationMinutes: o.durationMinutes,
       departureTime: DateTime.tryParse(o.departureTime),
       createdAt: DateTime.tryParse(o.createdAt),
       driverName: o.driverName,
@@ -75,12 +78,18 @@ class _AdItem {
   factory _AdItem.fromTrip(Map<String, dynamic> t) {
     final carBrand = '${t['car_brand'] ?? ''}'.trim();
     final carModel = '${t['car_model'] ?? ''}'.trim();
+    final durationMinutes =
+        int.tryParse(
+          '${t['duration_minutes'] ?? t['durationMinutes'] ?? ''}',
+        ) ??
+        0;
     return _AdItem(
       id: '${t['id'] ?? ''}',
       fromLocation: '${t['from_location'] ?? ''}',
       toLocation: '${t['to_location'] ?? ''}',
       price: '${t['price'] ?? ''}',
       seats: (t['available_seats'] as num?)?.toInt() ?? 0,
+      durationMinutes: durationMinutes,
       departureTime: DateTime.tryParse('${t['departure_time'] ?? ''}'),
       createdAt: DateTime.tryParse('${t['created_at'] ?? ''}'),
       driverName: '${t['driver_name'] ?? ''}',
@@ -94,6 +103,7 @@ class _AdItem {
     );
   }
 }
+
 class _AllAdsScreenState extends State<AllAdsScreen> {
   bool _isLoading = true;
   String? _error;
@@ -179,8 +189,10 @@ class _AllAdsScreenState extends State<AllAdsScreen> {
               IconButton(
                 onPressed: _isLoading ? null : _loadAds,
                 tooltip: 'Навсозӣ',
-                icon: const Icon(Icons.refresh_rounded,
-                    color: Color(0xFF0066FF)),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Color(0xFF0066FF),
+                ),
               ),
             ],
           ),
@@ -192,8 +204,8 @@ class _AllAdsScreenState extends State<AllAdsScreen> {
             _isLoading
                 ? 'Боркунӣ...'
                 : _ads.isEmpty
-                    ? 'Ҳоло ягон эълони ронандагон нест'
-                    : 'Ҳамаи эълонҳои ронандагон (${_ads.length})',
+                ? 'Ҳоло ягон эълони ронандагон нест'
+                : 'Ҳамаи эълонҳои ронандагон (${_ads.length})',
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ),
@@ -206,7 +218,8 @@ class _AllAdsScreenState extends State<AllAdsScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: Color(0xFF0066FF)));
+        child: CircularProgressIndicator(color: Color(0xFF0066FF)),
+      );
     }
 
     if (_error != null) {
@@ -249,6 +262,7 @@ class _AllAdsScreenState extends State<AllAdsScreen> {
     );
   }
 }
+
 class _MessageBlock extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -306,6 +320,15 @@ class _AdCard extends StatelessWidget {
     return '$day.$month.${dt.year} $hour:$minute';
   }
 
+  String _formatDuration(int totalMinutes) {
+    if (totalMinutes <= 0) return '';
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    if (hours == 0) return '$minutes дақиқа';
+    if (minutes == 0) return '$hours соат';
+    return '$hours соат $minutes дақиқа';
+  }
+
   @override
   Widget build(BuildContext context) {
     final carParts = <String>[
@@ -326,7 +349,8 @@ class _AdCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: const Color(0xFF0066FF).withValues(alpha: 0.15)),
+          color: const Color(0xFF0066FF).withValues(alpha: 0.15),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -341,8 +365,11 @@ class _AdCard extends StatelessWidget {
           // Route row
           Row(
             children: [
-              const Icon(Icons.trip_origin_rounded,
-                  size: 18, color: Color(0xFF0066FF)),
+              const Icon(
+                Icons.trip_origin_rounded,
+                size: 18,
+                color: Color(0xFF0066FF),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -356,11 +383,17 @@ class _AdCard extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(Icons.arrow_forward_rounded,
-                    size: 18, color: Colors.grey),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 18,
+                  color: Colors.grey,
+                ),
               ),
-              const Icon(Icons.location_on_rounded,
-                  size: 18, color: Colors.redAccent),
+              const Icon(
+                Icons.location_on_rounded,
+                size: 18,
+                color: Colors.redAccent,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -378,15 +411,28 @@ class _AdCard extends StatelessWidget {
           const Divider(height: 24, color: Color(0xFFEEF1F5)),
 
           // Info rows
-          _infoRow(Icons.payments_rounded, 'Нарх',
-              '${item.price.isEmpty ? '—' : item.price} сомонӣ'),
           _infoRow(
-              Icons.event_seat_rounded,
-              'Ҷойҳо',
-              item.seats <= 0 ? '—' : '${item.seats} ҷой'),
+            Icons.payments_rounded,
+            'Нарх',
+            '${item.price.isEmpty ? '—' : item.price} сомонӣ',
+          ),
+          _infoRow(
+            Icons.event_seat_rounded,
+            'Ҷойҳо',
+            item.seats <= 0 ? '—' : '${item.seats} ҷой',
+          ),
+          if (_formatDuration(item.durationMinutes).isNotEmpty)
+            _infoRow(
+              Icons.timelapse_rounded,
+              'Давомнокӣ',
+              _formatDuration(item.durationMinutes),
+            ),
           if (_formatDateTime(item.departureTime).isNotEmpty)
-            _infoRow(Icons.schedule_rounded, 'Рафтан',
-                _formatDateTime(item.departureTime)),
+            _infoRow(
+              Icons.schedule_rounded,
+              'Рафтан',
+              _formatDateTime(item.departureTime),
+            ),
           if (carLabel.isNotEmpty)
             _infoRow(Icons.directions_car_rounded, 'Мошин', carLabel),
           if (item.driverName.isNotEmpty)
@@ -395,15 +441,13 @@ class _AdCard extends StatelessWidget {
             _infoRow(Icons.phone_rounded, 'Телефон', item.driverPhone),
           if (item.notes.isNotEmpty)
             _infoRow(Icons.sticky_note_2_rounded, 'Изоҳа', item.notes),
-          if (_formatDateTime(item.createdAt).isNotEmpty)
-            _infoRow(Icons.access_time_rounded, 'Эълон шуд',
-                _formatDateTime(item.createdAt)),
           const SizedBox(height: 4),
         ],
       ),
     );
   }
-Widget _infoRow(IconData icon, String label, String value) {
+
+  Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

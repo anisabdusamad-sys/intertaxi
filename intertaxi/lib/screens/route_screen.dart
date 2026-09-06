@@ -9,18 +9,30 @@ import 'package:latlong2/latlong.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
-/// Approximate city-center coordinates for the supported Tajik cities.
+/// City-center coordinates used for route endpoints and OSRM requests.
 const Map<String, LatLng> cityCoordinates = {
   'Душанбе': LatLng(38.5598, 68.7870),
+  'Кӯлоб': LatLng(37.9146, 69.7847),
+  'Восеъ': LatLng(37.8042, 69.6442),
   'Хуҷанд': LatLng(40.2826, 69.6222),
-  'Кӯлоб': LatLng(37.9146, 69.7846),
-  'Бохтар': LatLng(37.8360, 68.7794),
-  'Истаравшан': LatLng(39.9044, 69.0034),
-  'Панҷакент': LatLng(39.4984, 67.6097),
-  'Турсунзода': LatLng(38.5126, 68.2317),
-  'Данғара': LatLng(38.0945, 69.3317),
-  'Хоруғ': LatLng(37.4910, 71.5500),
-  'Ҳисор': LatLng(38.5250, 68.5530),
+  'Бохтар': LatLng(37.8368, 68.7802),
+  'Канибодом': LatLng(40.2833, 70.4333),
+  'Исфара': LatLng(40.1228, 70.5983),
+  'Файзобод': LatLng(38.5473, 69.2132),
+  'Турсунзода': LatLng(38.5126, 68.2312),
+  'Панҷакент': LatLng(39.4952, 67.6093),
+  'Истаравшан': LatLng(39.9142, 69.0033),
+  'Ваҳдат': LatLng(38.5563, 69.0135),
+  'Ҳисор': LatLng(38.5256, 68.5512),
+  'Хоруғ': LatLng(37.4893, 71.5532),
+  'Данғара': LatLng(38.0983, 69.3384),
+  'Явон': LatLng(38.3090, 69.0558),
+  'Рашт': LatLng(39.0286, 70.3733),
+  'Шаҳритус': LatLng(37.2625, 68.1381),
+  'Қубодиён': LatLng(37.4308, 68.0839),
+  'Ҷаббор Расулов': LatLng(40.2458, 69.5000),
+  'Спитамен': LatLng(40.2208, 69.3400),
+  'Дарвоз': LatLng(38.4578, 70.7816),
 };
 
 /// Parses the first OSRM route geometry from a raw JSON body. Runs in a
@@ -184,8 +196,7 @@ class _RouteScreenState extends State<RouteScreen> {
 
         // Discard the response if the route changed while it was in
         // flight (or the widget was disposed).
-        if (!mounted ||
-            (requestId != null && requestId != _routeRequestId)) {
+        if (!mounted || (requestId != null && requestId != _routeRequestId)) {
           return;
         }
         setState(() {

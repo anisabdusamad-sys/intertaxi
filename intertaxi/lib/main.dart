@@ -39,16 +39,28 @@ const List<CarBrand> supportedCarBrands = [
 ];
 
 const Map<String, LatLng> taxiLocationCoordinates = {
-  'Кӯлоб': LatLng(37.9146, 69.7845),
   'Душанбе': LatLng(38.5598, 68.7870),
-  'Восеъ': LatLng(37.8031, 69.6453),
-  'Хуҷанд': LatLng(40.2833, 69.6333),
-  'Бухоро': LatLng(39.7681, 64.4556),
-  'Самарқанд': LatLng(39.6542, 66.9597),
-  'Файзобод': LatLng(38.5481, 69.3167),
-  'Турсунзода': LatLng(38.5111, 68.2317),
+  'Кӯлоб': LatLng(37.9146, 69.7847),
+  'Восеъ': LatLng(37.8042, 69.6442),
+  'Хуҷанд': LatLng(40.2826, 69.6222),
+  'Бохтар': LatLng(37.8368, 68.7802),
+  'Канибодом': LatLng(40.2833, 70.4333),
+  'Исфара': LatLng(40.1228, 70.5983),
+  'Файзобод': LatLng(38.5473, 69.2132),
+  'Турсунзода': LatLng(38.5126, 68.2312),
   'Панҷакент': LatLng(39.4952, 67.6093),
   'Истаравшан': LatLng(39.9142, 69.0033),
+  'Ваҳдат': LatLng(38.5563, 69.0135),
+  'Ҳисор': LatLng(38.5256, 68.5512),
+  'Хоруғ': LatLng(37.4893, 71.5532),
+  'Данғара': LatLng(38.0983, 69.3384),
+  'Явон': LatLng(38.3090, 69.0558),
+  'Рашт': LatLng(39.0286, 70.3733),
+  'Шаҳритус': LatLng(37.2625, 68.1381),
+  'Қубодиён': LatLng(37.4308, 68.0839),
+  'Ҷаббор Расулов': LatLng(40.2458, 69.5000),
+  'Спитамен': LatLng(40.2208, 69.3400),
+  'Дарвоз': LatLng(38.4578, 70.7816),
 };
 
 void main() async {
@@ -757,7 +769,30 @@ class _PassengerTripScreenState extends State<PassengerTripScreen> {
   String? _selectedDestination;
   bool _isLoading = false;
 
-  final List<String> _locations = ['Кӯлоб', 'Душанбе', 'Восеъ'];
+  final List<String> _locations = [
+    'Душанбе',
+    'Кӯлоб',
+    'Восеъ',
+    'Хуҷанд',
+    'Бохтар',
+    'Канибодом',
+    'Исфара',
+    'Файзобод',
+    'Турсунзода',
+    'Панҷакент',
+    'Истаравшан',
+    'Ваҳдат',
+    'Ҳисор',
+    'Хоруғ',
+    'Данғара',
+    'Явон',
+    'Рашт',
+    'Шаҳритус',
+    'Қубодиён',
+    'Ҷаббор Расулов',
+    'Спитамен',
+    'Дарвоз',
+  ];
 
   void _handleSearch() async {
     if (_selectedStartLocation == null || _selectedDestination == null) return;
@@ -1266,16 +1301,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String get _driverPhone => widget.driverPhone;
 
   final List<String> _allLocations = [
-    'Кӯлоб',
     'Душанбе',
+    'Кӯлоб',
     'Восеъ',
     'Хуҷанд',
-    'Бухоро',
-    'Самарқанд',
+    'Бохтар',
+    'Канибодом',
+    'Исфара',
     'Файзобод',
     'Турсунзода',
     'Панҷакент',
     'Истаравшан',
+    'Ваҳдат',
+    'Ҳисор',
+    'Хоруғ',
+    'Данғара',
+    'Явон',
+    'Рашт',
+    'Шаҳритус',
+    'Қубодиён',
+    'Ҷаббор Расулов',
+    'Спитамен',
+    'Дарвоз',
   ];
 
   @override
@@ -1556,7 +1603,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   _departureTime == null
                       ? 'Рӯз ва вақти рафтанро интихоб кунед'
                       : '${_departureTime!.hour.toString().padLeft(2, '0')}:${_departureTime!.minute.toString().padLeft(2, '0')} '
-                            '${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${(_departureTime!.year % 100).toString().padLeft(2, '0')}',
+                            '${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${_departureTime!.year}',
                 ),
               ),
               const SizedBox(height: 16),

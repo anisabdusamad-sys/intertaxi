@@ -34,16 +34,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   bool _isLoading = false;
 
   final List<String> _locations = [
-    'Кӯлоб',
     'Душанбе',
+    'Кӯлоб',
     'Восеъ',
     'Хуҷанд',
-    'Бухоро',
-    'Самарқанд',
+    'Бохтар',
+    'Канибодом',
+    'Исфара',
     'Файзобод',
     'Турсунзода',
     'Панҷакент',
     'Истаравшан',
+    'Ваҳдат',
+    'Ҳисор',
+    'Хоруғ',
+    'Данғара',
+    'Явон',
+    'Рашт',
+    'Шаҳритус',
+    'Қубодиён',
+    'Ҷаббор Расулов',
+    'Спитамен',
+    'Дарвоз',
   ];
 
   @override
@@ -501,7 +513,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           child: Text(
                             _departureTime == null
                                 ? 'Вақтро интихоб кунед'
-                                : '${_departureTime!.hour.toString().padLeft(2, '0')}:${_departureTime!.minute.toString().padLeft(2, '0')} ${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${(_departureTime!.year % 100).toString().padLeft(2, '0')}',
+                                : '${_departureTime!.hour.toString().padLeft(2, '0')}:${_departureTime!.minute.toString().padLeft(2, '0')} ${_departureTime!.day.toString().padLeft(2, '0')}.${_departureTime!.month.toString().padLeft(2, '0')}.${_departureTime!.year}',
                             style: TextStyle(
                               fontSize: 15,
                               color: _departureTime == null

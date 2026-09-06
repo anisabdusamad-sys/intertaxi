@@ -3,23 +3,35 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
-/// The 10 Tajik cities / districts available for route selection.
+/// The supported Tajik cities / districts available for route selection.
 ///
 /// IMPORTANT: keep this list identical to the driver's location list
 /// (main.dart `_allLocations` and create_order_screen `_locations`) —
 /// the passenger's search matches driver announcements by exact city
 /// name, so any mismatch here silently hides driver trips.
 const List<String> tajikCities = [
-  'Кӯлоб',
   'Душанбе',
+  'Кӯлоб',
   'Восеъ',
   'Хуҷанд',
-  'Бухоро',
-  'Самарқанд',
+  'Бохтар',
+  'Канибодом',
+  'Исфара',
   'Файзобод',
   'Турсунзода',
   'Панҷакент',
   'Истаравшан',
+  'Ваҳдат',
+  'Ҳисор',
+  'Хоруғ',
+  'Данғара',
+  'Явон',
+  'Рашт',
+  'Шаҳритус',
+  'Қубодиён',
+  'Ҷаббор Расулов',
+  'Спитамен',
+  'Дарвоз',
 ];
 
 /// Shows a Modal Bottom Sheet with the list of Tajik cities.
@@ -334,10 +346,7 @@ class _CityTileState extends State<_CityTile> {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   // Vibrant circular pin badge
@@ -363,9 +372,7 @@ class _CityTileState extends State<_CityTile> {
                         fontWeight: isSelected
                             ? FontWeight.w700
                             : FontWeight.w500,
-                        color: isSelected
-                            ? _kPrimaryAccent
-                            : Colors.black87,
+                        color: isSelected ? _kPrimaryAccent : Colors.black87,
                       ),
                     ),
                   ),
@@ -384,4 +391,3 @@ class _CityTileState extends State<_CityTile> {
     );
   }
 }
-
