@@ -44,8 +44,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final minute = parsed.minute.toString().padLeft(2, '0');
     final day = parsed.day.toString().padLeft(2, '0');
     final month = parsed.month.toString().padLeft(2, '0');
-    final year = (parsed.year % 100).toString().padLeft(2, '0');
-    return '$hour:$minute $day.$month.$year';
+    return '$hour:$minute $day.$month.${parsed.year}';
   }
 
   int get _durationMinutes =>
@@ -401,8 +400,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              softWrap: true,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
