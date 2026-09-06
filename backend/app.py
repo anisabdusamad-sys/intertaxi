@@ -15,6 +15,7 @@ import logging
 import uuid
 from flask import Flask, request, render_template_string
 from flask_socketio import SocketIO, emit
+from sqlalchemy import inspect, text
 from models import db, Trip
 
 # ---------------------------------------------------------------------------
@@ -45,6 +46,18 @@ def create_tables():
     """
     with app.app_context():
         db.create_all()
+        existing_columns = {
+            column['name']
+            for column in inspect(db.engine).get_columns('trips')
+        }
+        if 'duration_minutes' not in existing_columns:
+            db.session.execute(
+                text(
+                    "ALTER TABLE trips "
+                    "ADD COLUMN duration_minutes INTEGER DEFAULT 0 NOT NULL"
+                )
+            )
+            db.session.commit()
 
 
 create_tables()
@@ -144,6 +157,7 @@ def _create_trip(data, fallback_driver_id='rest'):
         from_location=data['from_location'].strip(),
         to_location=data['to_location'].strip(),
         departure_time=data['departure_time'],
+        duration_minutes=int(data.get('duration_minutes') or 0),
         price=price,
         available_seats=seats,
         status='active',

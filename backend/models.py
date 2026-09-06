@@ -33,6 +33,7 @@ class Trip(db.Model):
     from_location = db.Column(db.String(256), nullable=False)
     to_location = db.Column(db.String(256), nullable=False)
     departure_time = db.Column(db.String(64), nullable=False)
+    duration_minutes = db.Column(db.Integer, nullable=False, default=0)
     price = db.Column(db.Integer, nullable=False, default=0)
     available_seats = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.String(16), nullable=False, default='active')
@@ -48,6 +49,7 @@ class Trip(db.Model):
             'from_location': self.from_location,
             'to_location': self.to_location,
             'departure_time': self.departure_time,
+            'duration_minutes': self.duration_minutes,
             'price': self.price,
             'available_seats': self.available_seats,
             'status': self.status,
