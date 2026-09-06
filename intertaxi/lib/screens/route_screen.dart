@@ -559,7 +559,7 @@ class _RouteScreenState extends State<RouteScreen> {
         children: [
           // Premium drag handle indicator
           Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 8),
             child: Container(
               width: 40,
               height: 4,
@@ -570,7 +570,7 @@ class _RouteScreenState extends State<RouteScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -619,14 +619,17 @@ class _RouteScreenState extends State<RouteScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 // Stats micro-cards
                 Row(
                   children: [
                     // Distance card
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryBlue.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(14),
@@ -648,7 +651,7 @@ class _RouteScreenState extends State<RouteScreen> {
                                 letterSpacing: -0.2,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               '${_distanceKm.toStringAsFixed(1)} км',
                               style: const TextStyle(
@@ -666,7 +669,10 @@ class _RouteScreenState extends State<RouteScreen> {
                     // Travel time card
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(14),
@@ -686,7 +692,7 @@ class _RouteScreenState extends State<RouteScreen> {
                                 letterSpacing: -0.2,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               '~$durationMin мин',
                               style: const TextStyle(
@@ -704,7 +710,10 @@ class _RouteScreenState extends State<RouteScreen> {
                     // Arrival time card
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 9,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(14),
@@ -724,7 +733,7 @@ class _RouteScreenState extends State<RouteScreen> {
                                 letterSpacing: -0.2,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               arrivalTime,
                               style: const TextStyle(

@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'screens/passenger_home_screen.dart';
 import 'screens/server_settings_screen.dart';
 import 'services/api_service.dart';
+import 'services/socket_service.dart';
 
 const String _appSessionVersion = 'intertaxi_session_v2';
 
@@ -2280,12 +2281,43 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   int _currentIndex = 0;
   bool _isOnline = true;
   List<Order> _orders = [];
+  final List<Map<String, dynamic>> _passengerMessages = [];
+  StreamSubscription<Map<String, dynamic>>? _passengerBookedSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadOrders();
+    _connectDriverMessages();
+  }
+
+  Future<void> _connectDriverMessages() async {
+    _passengerBookedSubscription = SocketService.instance.onPassengerBooked
+        .listen((message) {
+          if (message['driver_id']?.toString() != widget.driverPhone) return;
+          if (!mounted) return;
+          setState(() => _passengerMessages.insert(0, message));
+        });
+    await SocketService.instance.connect(
+      userId: widget.driverPhone,
+      role: 'driver',
+    );
+    final savedMessages = await ApiService.fetchDriverBookings(
+      widget.driverPhone,
+    );
+    if (!mounted) return;
+    setState(() {
+      for (final message in savedMessages.reversed) {
+        final messageId = message['id']?.toString();
+        if (messageId == null ||
+            !_passengerMessages.any(
+              (existing) => existing['id']?.toString() == messageId,
+            )) {
+          _passengerMessages.add(message);
+        }
+      }
+    });
   }
 
   Future<void> _loadOrders() async {
@@ -2297,6 +2329,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _passengerBookedSubscription?.cancel();
+    SocketService.instance.disconnect();
     super.dispose();
   }
 
@@ -2801,6 +2835,45 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   }
 
   Widget _buildMessagesTab() {
+    if (_passengerMessages.isNotEmpty) {
+      return ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _passengerMessages.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final message = _passengerMessages[index];
+          final name = message['passenger_name']?.toString().trim();
+          final passengerName = name == null || name.isEmpty ? 'Мусофир' : name;
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFDCE8FF)),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F0FF),
+                  child: Icon(Icons.person_rounded, color: Color(0xFF0066FF)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '$passengerName ҷойи сафарро брон кард',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

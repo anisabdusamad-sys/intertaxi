@@ -24,6 +24,8 @@ import '../models/intertaxi_models.dart' as models;
 
 import '../services/api_service.dart';
 
+import '../services/socket_service.dart';
+
 import '../widgets/city_selection_modal.dart';
 
 import '../widgets/driver_ride_card.dart';
@@ -343,6 +345,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
 
     _toCity = 'Кӯлоб';
 
+    _connectPassengerSocket();
+
     // Keep an open results list in sync with the server: when any driver
     // deletes an announcement it disappears here without the user having to
     // re-search manually.
@@ -376,6 +380,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     });
   }
 
+  Future<void> _connectPassengerSocket() async {
+    await SocketService.instance.connect(
+      userId: widget.passengerPhone,
+      role: 'passenger',
+    );
+  }
+
   @override
   void dispose() {
     _refreshTimer?.cancel();
@@ -384,6 +395,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     _positionSubscription?.cancel();
 
     _flutterTts.stop();
+
+    SocketService.instance.disconnect();
 
     // Tear down every piece of in-memory session state so that re-entering
     // the passenger section always starts from a clean slate (no stale

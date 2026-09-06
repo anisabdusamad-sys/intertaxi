@@ -102,6 +102,37 @@ class Trip(db.Model):
         }
 
 
+class Booking(db.Model):
+    """A passenger booking that must remain visible to the driver."""
+
+    __tablename__ = "bookings"
+
+    id = db.Column(db.String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    trip_id = db.Column(db.String(64), index=True, nullable=False)
+    driver_id = db.Column(db.String(64), index=True, nullable=False)
+    passenger_name = db.Column(db.String(120), default="", nullable=False)
+    passenger_phone = db.Column(db.String(32), default="", nullable=False)
+    from_location = db.Column(db.String(120), default="", nullable=False)
+    to_location = db.Column(db.String(120), default="", nullable=False)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "trip_id": self.trip_id,
+            "driver_id": self.driver_id,
+            "passenger_name": self.passenger_name,
+            "passenger_phone": self.passenger_phone,
+            "from_location": self.from_location,
+            "to_location": self.to_location,
+            "created_at": self.created_at.isoformat() if self.created_at else "",
+        }
+
+
 with app.app_context():
     db.create_all()
     existing_columns = {column["name"] for column in inspect(db.engine).get_columns("trips")}
@@ -242,6 +273,56 @@ def delete_trip_rest(trip_id: str):
     return jsonify({"ok": True, "id": trip_id})
 
 
+@app.route("/api/bookings", methods=["GET"])
+def get_bookings():
+    """Returns durable passenger bookings for one driver."""
+    driver_id = request.args.get("driver_id", "").strip()
+    if not driver_id:
+        return jsonify({"bookings": []})
+    bookings = Booking.query.filter_by(driver_id=driver_id).order_by(
+        Booking.created_at.desc()
+    ).all()
+    return jsonify({"bookings": [booking.to_dict() for booking in bookings]})
+
+
+def _create_booking(payload):
+    """Books one seat, stores the booking, and notifies connected clients."""
+    trip_key = str(payload.get("trip_id", "") or "").strip()
+    trip = db.session.get(Trip, trip_key) if trip_key else None
+    if trip is None:
+        return None, ("Trip not found", 404)
+    if trip.status != "active" or trip.available_seats <= 0:
+        return None, ("No seats available", 409)
+
+    trip.available_seats -= 1
+    if trip.available_seats == 0:
+        trip.status = "booked"
+    booking = Booking(
+        trip_id=trip.id,
+        driver_id=trip.driver_id,
+        passenger_name=str(payload.get("passenger_name", "")).strip(),
+        passenger_phone=str(payload.get("passenger_phone", "")).strip(),
+        from_location=trip.from_location,
+        to_location=trip.to_location,
+    )
+    db.session.add(booking)
+    db.session.commit()
+
+    socketio.emit("trip_updated", trip.to_dict())
+    socketio.emit("passenger_booked", booking.to_dict())
+    return {"booking": booking.to_dict(), "trip": trip.to_dict()}, None
+
+
+@app.route("/api/bookings", methods=["POST"])
+def create_booking():
+    payload = request.get_json(silent=True) or {}
+    result, error = _create_booking(payload)
+    if error:
+        message, status = error
+        return jsonify({"ok": False, "error": message}), status
+    return jsonify({"ok": True, **result}), 201
+
+
 # ---------------------------------------------------------------------------
 # Socket.IO handlers
 # ---------------------------------------------------------------------------
@@ -299,27 +380,21 @@ def handle_get_trips(data):
 @socketio.on("book_trip")
 def handle_book_trip(data):
     """Passenger books a seat on a trip."""
-    data = data or {}
-    trip_key = str(data.get("trip_id", "") or "").strip()
-    trip = db.session.get(Trip, trip_key) if trip_key else None
-    if trip is None:
-        return {"ok": False, "error": "Trip not found"}
-    if trip.available_seats <= 0:
-        return {"ok": False, "error": "No seats available"}
-    trip.available_seats -= 1
-    if trip.available_seats == 0:
-        trip.status = "booked"
-    db.session.commit()
-    socketio.emit("trip_updated", trip.to_dict())
+    result, error = _create_booking(data or {})
+    if error:
+        message, _ = error
+        return {"ok": False, "error": message}
+    booking = result["booking"]
+    trip = result["trip"]
     emit(
         "booking_confirmed",
         {
             "ok": True,
-            "trip_id": trip.id,
-            "passenger_name": data.get("passenger_name", ""),
+            "trip_id": trip["id"],
+            "passenger_name": booking["passenger_name"],
         },
     )
-    return {"ok": True, "trip": trip.to_dict()}
+    return {"ok": True, "trip": trip}
 
 
 @socketio.on("delete_trip")

@@ -147,6 +147,24 @@ r = client.get("/api/trips?from=Кулоб&to=Восеъ")
 assert len(r.get_json()["trips"]) == 1, r.get_json()
 print("GET /api/trips?from=Кулоб&to=Восеъ ->", [t["to_location"] for t in filtered])
 
+# 11) A booking is acknowledged, broadcast to the driver, and persisted.
+booking_socket = socketio.test_client(app, query_string="user_id=d5&role=driver")
+booking_socket.get_received()
+passenger_socket = socketio.test_client(app, query_string="user_id=p1&role=passenger")
+passenger_socket.get_received()
+trip_for_booking = client.get("/api/trips?from=Кулоб&to=Душанбе").get_json()["trips"][0]
+passenger_socket.emit(
+    "book_trip",
+    {"trip_id": trip_for_booking["id"], "passenger_name": "Passenger 1", "passenger_phone": "p1"},
+)
+passenger_events = passenger_socket.get_received()
+assert any(event["name"] == "booking_confirmed" and event["args"][0]["ok"] for event in passenger_events)
+driver_events = booking_socket.get_received()
+assert any(event["name"] == "passenger_booked" for event in driver_events)
+stored_bookings = client.get("/api/bookings?driver_id=d5").get_json()["bookings"]
+assert stored_bookings and stored_bookings[0]["passenger_name"] == "Passenger 1"
+print("book_trip -> acknowledgement, driver event, and durable booking (OK)")
+
 # 10) DELETE /api/trips/<string:trip_id> permanently removes the row
 #     (verify it is really gone from the DB, not just hidden).
 vose_trip = filtered[0]

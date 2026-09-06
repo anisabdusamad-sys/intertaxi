@@ -225,10 +225,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         departureTime: _departureTime!.toIso8601String(),
         driverName: widget.driverName,
         driverPhone: widget.driverPhone,
-        carBrand: '',
-        carModel: '',
-        carColor: '',
-        carPlate: '',
+        carBrand: prefs.getString('driver_car_brand') ?? '',
+        carModel: prefs.getString('driver_car_model') ?? '',
+        carColor: prefs.getString('driver_car_color') ?? '',
+        carPlate: prefs.getString('driver_plate_number') ?? '',
       );
 
       // 3) Persist the order locally (SharedPreferences) so it appears in

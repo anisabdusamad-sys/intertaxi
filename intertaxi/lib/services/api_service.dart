@@ -19,6 +19,7 @@ class ApiService {
 
   static const String _baseUrlPrefsKey = 'backend_url';
   static String? _customBaseUrl;
+
   /// Deployed backend (Render) — used for HTTP and Socket.IO alike.
   static const String defaultBaseUrl = 'https://intertaxi.onrender.com';
 
@@ -103,6 +104,57 @@ class ApiService {
     return await createTrip(payload) != null;
   }
 
+  /// Loads bookings stored for a driver so messages survive reconnects.
+  static Future<List<Map<String, dynamic>>> fetchDriverBookings(
+    String driverId,
+  ) async {
+    try {
+      final base = await resolveBaseUrl();
+      final uri = Uri.parse(
+        '$base/api/bookings',
+      ).replace(queryParameters: {'driver_id': driverId});
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final bookings = data['bookings'] as List<dynamic>? ?? const [];
+        return bookings.whereType<Map<String, dynamic>>().toList();
+      }
+    } catch (_) {
+      // ignore — backend offline
+    }
+    return const [];
+  }
+
+  /// Books a trip through the reliable REST API. The backend persists the
+  /// booking and broadcasts the driver notification after committing it.
+  static Future<Map<String, dynamic>> createBooking({
+    required String tripId,
+    required String passengerName,
+    required String passengerPhone,
+  }) async {
+    try {
+      final base = await resolveBaseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$base/api/bookings'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'trip_id': tripId,
+              'passenger_name': passengerName,
+              'passenger_phone': passengerPhone,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'ok': false, 'error': 'Invalid server response'};
+    } catch (error) {
+      return {'ok': false, 'error': 'Server connection failed: $error'};
+    }
+  }
+
   /// Fetches trips from the backend, optionally filtered by the EXACT route.
   ///
   /// When [from] / [to] are provided they are sent as `?from=...&to=...`
@@ -124,15 +176,11 @@ class ApiService {
           if (t != null && t.isNotEmpty) 'to': t,
         },
       );
-      final response = await http
-          .get(uri)
-          .timeout(const Duration(seconds: 5));
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final trips = data['trips'] as List<dynamic>? ?? const [];
-        return trips
-            .whereType<Map<String, dynamic>>()
-            .toList();
+        return trips.whereType<Map<String, dynamic>>().toList();
       }
     } catch (_) {
       // ignore — backend offline

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
-import '../services/socket_service.dart';
+import '../services/api_service.dart';
 
 /// InterTaxi Trip Detail Screen (Подробно).
 ///
@@ -49,8 +49,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   int get _durationMinutes =>
       int.tryParse(widget.trip['duration_minutes']?.toString() ?? '') ?? 0;
-  String get _carBrand => widget.trip['car_brand']?.toString() ?? '';
-  String get _carModel => widget.trip['car_model']?.toString() ?? '';
+  String get _carBrand =>
+      widget.trip['car_brand']?.toString().trim() ??
+      widget.trip['carBrand']?.toString().trim() ??
+      '';
   String get _carColor => widget.trip['car_color']?.toString() ?? '';
   String get _carPlate => widget.trip['car_plate']?.toString() ?? '';
   String get _driverName => widget.trip['driver_name']?.toString() ?? '';
@@ -59,20 +61,82 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   int get _seatsInt => int.tryParse(_seats) ?? 0;
   bool get _bookable => _isActive && _seatsInt > 0;
 
+  String get _vehicleName => _carBrand.isNotEmpty ? _carBrand : '—';
+
+  String? get _vehicleLogoAsset {
+    const brandLogos = {
+      'Mercedes': 'assets/logos/1.jpg',
+      'Toyota': 'assets/logos/2.jpg',
+      'Honda': 'assets/logos/3.jpg',
+      'Hyundai': 'assets/logos/4.jpg',
+      'Opel': 'assets/logos/5.jpg',
+      'BYD': 'assets/logos/6.jpg',
+      'KIA': 'assets/logos/7.jpg',
+      'Lexus': 'assets/logos/8.jpg',
+      'Nissan': 'assets/logos/9.jpg',
+      'Audi': 'assets/logos/10.jpg',
+      'Ford': 'assets/logos/11.jpg',
+      'BMW': 'assets/logos/12.jpg',
+    };
+    return brandLogos[_carBrand.trim()];
+  }
+
+  String get _formattedPlate {
+    final compact = _carPlate.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final match = RegExp(
+      r'^(\d{4})([A-ZА-ЯЁ]{1,3})(\d{2})$',
+    ).firstMatch(compact);
+    if (match != null) {
+      return '${match.group(1)} ${match.group(2)} ${match.group(3)}';
+    }
+    return _carPlate.trim().isEmpty
+        ? '—'
+        : _carPlate.trim().replaceAll(RegExp(r'\s+'), ' ').toUpperCase();
+  }
+
+  Color get _carColorSwatch {
+    const colors = {
+      'сафед': Color(0xFFE8EDF5),
+      'сиёҳ': Color(0xFF252A34),
+      'нуқрагӣ': Color(0xFFB8C0CC),
+      'кабуд': Color(0xFF1769E0),
+      'kabud': Color(0xFF1769E0),
+      'blue': Color(0xFF1769E0),
+      'сурх': Color(0xFFE53935),
+      'нилуфарӣ': Color(0xFF8E44AD),
+      'нилӯфарӣ': Color(0xFF8E44AD),
+      'ҳафтранг': Color(0xFFF5A623),
+      'сабз': Color(0xFF35A66F),
+      'зард': Color(0xFFFFC107),
+      'зар': Color(0xFFFFC107),
+      'zar': Color(0xFFFFC107),
+      'yellow': Color(0xFFFFC107),
+    };
+    return colors[_carColor.trim().toLowerCase()] ?? AppColors.primaryBlue;
+  }
+
   // --- Actions --------------------------------------------------------------
 
-  void _bookTrip() {
+  Future<void> _bookTrip() async {
     if (_booking || _id.isEmpty || !_bookable) return;
     setState(() => _booking = true);
-    SocketService.instance.bookTrip(
+    final result = await ApiService.createBooking(
       tripId: _id,
       passengerName: widget.passengerName,
       passengerPhone: widget.passengerPhone,
     );
-    // The passenger list updates itself via the `trip_updated` broadcast.
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) Navigator.of(context).pop();
-    });
+    if (!mounted) return;
+    setState(() => _booking = false);
+    if (result['ok'] == true) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['error']?.toString() ?? 'Брон кардан иҷро нашуд'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -94,8 +158,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             _buildRouteCard(),
             const SizedBox(height: 12),
             _buildInfoCard(),
-            const SizedBox(height: 12),
-            _buildDriverCard(),
+            if (_hasVehicleDetails) ...[
+              const SizedBox(height: 12),
+              _buildVehicleCard(),
+            ],
           ],
         ),
       ),
@@ -194,6 +260,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          _buildDriverProfile(),
           const SizedBox(height: 18),
           _routeRow(
             icon: Icons.trip_origin_rounded,
@@ -213,6 +281,57 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDriverProfile() {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white54),
+          ),
+          child: const Icon(
+            Icons.person_rounded,
+            size: 24,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _driverName.isEmpty ? 'Ронанда' : _driverName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _driverPhone.isEmpty ? 'Рақам нест' : _driverPhone,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.verified_rounded, color: Colors.white70, size: 20),
+      ],
     );
   }
 
@@ -239,133 +358,304 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     );
   }
 
-  /// Flat info card: seats, departure time, announcement id.
+  /// Flat info card with the key trip details arranged for quick scanning.
   Widget _buildInfoCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
       decoration: _flatDecoration(),
       child: Column(
         children: [
-          _infoTile(
-            icon: Icons.event_seat_rounded,
-            label: 'Ҷойҳои холӣ',
-            value: _seats,
+          Row(
+            children: [
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.event_seat_rounded,
+                  label: 'Ҷойҳои холӣ',
+                  value: _seats,
+                  suffix: 'ҷой',
+                  color: AppColors.primaryBlue,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _summaryTile(
+                  icon: Icons.timelapse_rounded,
+                  label: 'Давомнокӣ',
+                  value: _buildDurationLabel(),
+                  color: const Color(0xFFE18332),
+                ),
+              ),
+            ],
           ),
-          const Divider(height: 1, color: AppColors.cardBorder),
-          _infoTile(
+          const SizedBox(height: 8),
+          _summaryTile(
             icon: Icons.schedule_rounded,
             label: 'Вақти сафар',
             value: _departure.isEmpty ? '—' : _departure,
-          ),
-          const Divider(height: 1, color: AppColors.cardBorder),
-          _infoTile(
-            icon: Icons.timelapse_rounded,
-            label: 'Давомнокии сафар',
-            value: _durationLabel,
+            color: const Color(0xFF7A55D8),
+            fullValue: true,
           ),
         ],
       ),
     );
   }
 
-  /// Driver details card with name and phone number.
-  Widget _buildDriverCard() {
+  Widget _summaryTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    String? suffix,
+    bool fullValue = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: 86),
+      padding: const EdgeInsets.fromLTRB(10, 10, 8, 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: color),
+          const Spacer(),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: fullValue ? 2 : 1,
+                  overflow: fullValue
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: fullValue ? 14 : 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (suffix != null) ...[
+                const SizedBox(width: 3),
+                Text(
+                  suffix,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _buildDurationLabel() {
+    if (_durationMinutes <= 0) return '—';
+    final hours = _durationMinutes ~/ 60;
+    final minutes = _durationMinutes % 60;
+    if (hours == 0) return '$minutes дақ.';
+    if (minutes == 0) return '$hours соат';
+    return '$hours с. $minutes дақ.';
+  }
+
+  bool get _hasVehicleDetails =>
+      _carBrand.isNotEmpty || _carColor.isNotEmpty || _carPlate.isNotEmpty;
+
+  /// Vehicle details displayed as compact premium badges.
+  Widget _buildVehicleCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: _flatDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10),
+            child: Text(
+              'Маълумоти мошин',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                flex: 11,
+                child: _vehicleItem(
+                  Icons.directions_car_rounded,
+                  'Мошин',
+                  _vehicleName,
+                  logoAsset: _vehicleLogoAsset,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(flex: 13, child: _buildColorBadge()),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _vehicleItem(
+            Icons.pin_rounded,
+            'Рақами мошин',
+            _formattedPlate,
+            plate: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorBadge() {
+    final hasColor = _carColor.isNotEmpty;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 70),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
+      decoration: BoxDecoration(
+        color: _carColorSwatch.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _carColorSwatch.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: hasColor ? _carColorSwatch : AppColors.gray300,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: _carColorSwatch.withValues(alpha: 0.30),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Ранг',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasColor ? _carColor : '—',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vehicleItem(
+    IconData icon,
+    String label,
+    String value, {
+    Color? swatch,
+    bool plate = false,
+    String? logoAsset,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 70),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.offWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: AppColors.lightBlue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  size: 28,
-                  color: AppColors.primaryBlue,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _driverName.isEmpty ? 'Ронанда' : _driverName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+              if (logoAsset != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.asset(
+                    logoAsset,
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(icon, size: 18, color: AppColors.primaryBlue),
+                  ),
+                )
+              else
+                Icon(icon, size: 18, color: AppColors.primaryBlue),
+              if (swatch != null) ...[
+                const Spacer(),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: swatch,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: swatch.withValues(alpha: 0.35),
+                        blurRadius: 5,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.phone_rounded,
-                          size: 15,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _driverPhone.isEmpty ? '—' : _driverPhone,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
-          if (_carBrand.isNotEmpty ||
-              _carModel.isNotEmpty ||
-              _carColor.isNotEmpty ||
-              _carPlate.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: AppColors.cardBorder),
-            const SizedBox(height: 12),
-            _infoTile(
-              icon: Icons.directions_car_rounded,
-              label: 'Мошин',
-              value: [
-                _carBrand,
-                _carModel,
-              ].where((value) => value.isNotEmpty).join(' '),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value.isEmpty ? '—' : value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: plate ? 16 : 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              letterSpacing: plate ? 1.5 : 0,
             ),
-            _infoTile(
-              icon: Icons.palette_rounded,
-              label: 'Ранг',
-              value: _carColor.isEmpty ? '—' : _carColor,
-            ),
-            _infoTile(
-              icon: Icons.pin_rounded,
-              label: 'Рақами мошин',
-              value: _carPlate.isEmpty ? '—' : _carPlate,
-            ),
-          ],
+          ),
         ],
       ),
     );
-  }
-
-  String get _durationLabel {
-    if (_durationMinutes <= 0) return '—';
-    final hours = _durationMinutes ~/ 60;
-    final minutes = _durationMinutes % 60;
-    if (hours == 0) return '$minutes дақиқа';
-    if (minutes == 0) return '$hours соат';
-    return '$hours соат $minutes дақиқа';
   }
 
   /// Flat, modern card decoration: white surface, hairline border, no shadow.
@@ -374,42 +664,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       color: AppColors.white,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: AppColors.cardBorder),
-    );
-  }
-
-  Widget _infoTile({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.primaryBlue),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const Spacer(),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              softWrap: true,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -33,7 +33,7 @@ class DriverRideCard extends StatelessWidget {
     final to = ride.route.length > 1 ? ride.route.last : searchTo;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -52,16 +52,16 @@ class DriverRideCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            padding: const EdgeInsets.fromLTRB(10, 7, 10, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDriverRow(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 5),
                 _buildRouteRow(from, to),
-                const SizedBox(height: 12),
+                const SizedBox(height: 5),
                 _buildScheduleRow(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
                 _buildSeatsRow(),
               ],
             ),
@@ -76,19 +76,19 @@ class DriverRideCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             color: AppColors.lightBlue,
             shape: BoxShape.circle,
           ),
           child: const Icon(
             Icons.person_rounded,
-            size: 24,
+            size: 18,
             color: AppColors.primaryBlue,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 7),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,18 +98,18 @@ class DriverRideCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                   letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 1),
               Row(
                 children: [
                   const Icon(
                     Icons.phone_rounded,
-                    size: 13,
+                    size: 11,
                     color: AppColors.primaryBlue,
                   ),
                   const SizedBox(width: 5),
@@ -119,7 +119,7 @@ class DriverRideCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
                       ),
@@ -139,30 +139,30 @@ class DriverRideCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 8,
-          height: 8,
+          width: 6,
+          height: 6,
           decoration: const BoxDecoration(
             color: AppColors.success,
             shape: BoxShape.circle,
           ),
         ),
-        Container(width: 2, height: 14, color: AppColors.gray300),
+        Container(width: 2, height: 10, color: AppColors.gray300),
         Container(
-          width: 8,
-          height: 8,
+          width: 6,
+          height: 6,
           decoration: const BoxDecoration(
             color: AppColors.error,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
             'Масир: аз $from то $to',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -178,14 +178,14 @@ class DriverRideCard extends StatelessWidget {
       children: [
         const Icon(
           Icons.schedule_rounded,
-          size: 16,
+          size: 13,
           color: AppColors.primaryBlue,
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 4),
         Text(
           ride.departureLabel,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
@@ -194,7 +194,7 @@ class DriverRideCard extends StatelessWidget {
         Text(
           ride.durationLabel,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondary,
           ),
@@ -208,25 +208,33 @@ class DriverRideCard extends StatelessWidget {
       children: [
         const Icon(
           Icons.event_seat_rounded,
-          size: 16,
+          size: 13,
           color: AppColors.primaryBlue,
         ),
-        const SizedBox(width: 5),
-        Text(
-          'Ҷои нишаст: ${ride.availableSeats}',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            'Ҷои нишаст: ${ride.availableSeats}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Text(
-          '${ride.fullRoutePrice} сомонӣ',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            color: AppColors.primaryBlue,
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            '${ride.fullRoutePrice} сомонӣ',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryBlue,
+            ),
           ),
         ),
         const Spacer(),
@@ -235,13 +243,13 @@ class DriverRideCard extends StatelessWidget {
           tooltip: 'Кушодани маълумоти сафар',
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+          constraints: const BoxConstraints.tightFor(width: 24, height: 24),
           style: IconButton.styleFrom(
             foregroundColor: Colors.white,
             backgroundColor: AppColors.primaryBlue,
             shape: const CircleBorder(),
           ),
-          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 13),
         ),
       ],
     );

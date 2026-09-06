@@ -329,6 +329,28 @@ class _AdCard extends StatelessWidget {
     return '$hours соат $minutes дақиқа';
   }
 
+  Color _carColor(String value) {
+    final normalized = value.trim().toLowerCase();
+    const colors = {
+      'сафед': Color(0xFFE8EDF5),
+      'сиёҳ': Color(0xFF252A34),
+      'нуқрагӣ': Color(0xFFB8C0CC),
+      'кабуд': Color(0xFF1769E0),
+      'kabud': Color(0xFF1769E0),
+      'blue': Color(0xFF1769E0),
+      'сурх': Color(0xFFE53935),
+      'нилӯфарӣ': Color(0xFF8E44AD),
+      'нилуфарӣ': Color(0xFF8E44AD),
+      'ҳафтранг': Color(0xFFF5A623),
+      'сабз': Color(0xFF35A66F),
+      'зард': Color(0xFFFFC107),
+      'зар': Color(0xFFFFC107),
+      'zar': Color(0xFFFFC107),
+      'yellow': Color(0xFFFFC107),
+    };
+    return colors[normalized] ?? Colors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
     final carParts = <String>[
@@ -433,8 +455,7 @@ class _AdCard extends StatelessWidget {
               'Рафтан',
               _formatDateTime(item.departureTime),
             ),
-          if (carLabel.isNotEmpty)
-            _infoRow(Icons.directions_car_rounded, 'Мошин', carLabel),
+          if (carLabel.isNotEmpty) _vehicleInfoRow(carLabel),
           if (item.driverName.isNotEmpty)
             _infoRow(Icons.person_rounded, 'Ронанда', item.driverName),
           if (item.driverPhone.isNotEmpty)
@@ -442,6 +463,60 @@ class _AdCard extends StatelessWidget {
           if (item.notes.isNotEmpty)
             _infoRow(Icons.sticky_note_2_rounded, 'Изоҳа', item.notes),
           const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _vehicleInfoRow(String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.directions_car_rounded,
+            size: 17,
+            color: Color(0xFF0066FF),
+          ),
+          const SizedBox(width: 10),
+          const SizedBox(
+            width: 78,
+            child: Text(
+              'Мошин',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              children: [
+                if (item.carColor.trim().isNotEmpty)
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: _carColor(item.carColor),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black26),
+                    ),
+                  ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

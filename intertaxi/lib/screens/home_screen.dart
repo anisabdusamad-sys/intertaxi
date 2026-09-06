@@ -35,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'нуқрагӣ': Color(0xFFB8C0CC),
     'кабуд': Color(0xFF0066FF),
     'сурх': Color(0xFFE53935),
+    'нилуфарӣ': Color(0xFF8E44AD),
+    'нилӯфарӣ': Color(0xFF8E44AD),
     'ҳафтранг': Color(0xFFF5A623),
   };
 
@@ -118,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Color _driverColorFor(DriverRide ride) =>
-      _carColorMap[ride.carColor] ?? AppColors.primaryBlue;
+      _carColorMap[ride.carColor.trim().toLowerCase()] ?? AppColors.primaryBlue;
 
   // ==================== HANDLERS ====================
 
@@ -189,7 +191,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final rides = await DriverRideRepository.fetchMatchingRides(from: from, to: to);
+      final rides = await DriverRideRepository.fetchMatchingRides(
+        from: from,
+        to: to,
+      );
       if (!mounted) return;
       setState(() {
         _searchResults = rides

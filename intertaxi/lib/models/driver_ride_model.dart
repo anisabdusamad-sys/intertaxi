@@ -14,6 +14,7 @@ class DriverRide {
   final String id;
   final String driverName;
   final String driverPhone;
+  final String carBrand;
   final String carModel;
   final String carColor;
   final String carPlate;
@@ -32,6 +33,7 @@ class DriverRide {
     required this.id,
     required this.driverName,
     this.driverPhone = '',
+    this.carBrand = '',
     required this.carModel,
     required this.carColor,
     required this.carPlate,
@@ -62,10 +64,8 @@ class DriverRide {
       id: map['id']?.toString() ?? '',
       driverName: map['driver_name']?.toString() ?? '',
       driverPhone: map['driver_phone']?.toString() ?? '',
-      carModel: [map['car_brand'], map['car_model']]
-          .where((value) => value != null && value.toString().trim().isNotEmpty)
-          .map((value) => value.toString().trim())
-          .join(' '),
+      carBrand: map['car_brand']?.toString().trim() ?? '',
+      carModel: map['car_model']?.toString().trim() ?? '',
       carColor: map['car_color']?.toString() ?? '',
       carPlate: map['car_plate']?.toString() ?? '',
       availableSeats:
@@ -97,6 +97,7 @@ class DriverRide {
       'driver_id': driverPhone,
       'driver_name': driverName,
       'driver_phone': driverPhone,
+      'car_brand': carBrand,
       'car_model': carModel,
       'car_color': carColor,
       'car_plate': carPlate,
@@ -296,6 +297,7 @@ DriverRide? orderToRide(Order order) {
     id: order.id,
     driverName: order.driverName,
     driverPhone: order.driverPhone,
+    carBrand: brand,
     carModel: carModel,
     carColor: order.carColor,
     carPlate: order.carPlate,
