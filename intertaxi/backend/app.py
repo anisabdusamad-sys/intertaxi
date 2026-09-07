@@ -114,6 +114,8 @@ class Booking(db.Model):
     passenger_phone = db.Column(db.String(32), default="", nullable=False)
     from_location = db.Column(db.String(120), default="", nullable=False)
     to_location = db.Column(db.String(120), default="", nullable=False)
+    requested_seats = db.Column(db.Integer, default=1, nullable=False)
+    status = db.Column(db.String(16), default="pending", nullable=False)
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),
@@ -129,6 +131,8 @@ class Booking(db.Model):
             "passenger_phone": self.passenger_phone,
             "from_location": self.from_location,
             "to_location": self.to_location,
+            "requested_seats": self.requested_seats,
+            "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else "",
         }
 
@@ -147,6 +151,18 @@ with app.app_context():
         if column_name not in existing_columns:
             db.session.execute(
                 text(f"ALTER TABLE trips ADD COLUMN {column_name} {definition}")
+            )
+    existing_booking_columns = {
+        column["name"] for column in inspect(db.engine).get_columns("bookings")
+    }
+    booking_columns = {
+        "requested_seats": "INTEGER DEFAULT 1 NOT NULL",
+        "status": "VARCHAR(16) DEFAULT 'pending' NOT NULL",
+    }
+    for column_name, definition in booking_columns.items():
+        if column_name not in existing_booking_columns:
+            db.session.execute(
+                text(f"ALTER TABLE bookings ADD COLUMN {column_name} {definition}")
             )
     db.session.commit()
 
@@ -314,6 +330,8 @@ def _create_booking(payload):
         passenger_phone=str(payload.get("passenger_phone", "")).strip(),
         from_location=trip.from_location,
         to_location=trip.to_location,
+        requested_seats=requested_seats,
+        status="pending",
     )
     db.session.add(booking)
     db.session.commit()
@@ -331,6 +349,23 @@ def create_booking():
         message, status = error
         return jsonify({"ok": False, "error": message}), status
     return jsonify({"ok": True, **result}), 201
+
+
+@app.route("/api/bookings/<string:booking_id>/decision", methods=["POST"])
+def decide_booking(booking_id: str):
+    payload = request.get_json(silent=True) or {}
+    booking = db.session.get(Booking, booking_id)
+    if booking is None:
+        return jsonify({"ok": False, "error": "Booking not found"}), 404
+    if str(payload.get("driver_id", "")).strip() != booking.driver_id:
+        return jsonify({"ok": False, "error": "Not authorized"}), 403
+    decision = str(payload.get("decision", "")).strip().lower()
+    if decision not in {"approved", "rejected"}:
+        return jsonify({"ok": False, "error": "Invalid decision"}), 400
+    booking.status = decision
+    db.session.commit()
+    socketio.emit("booking_decision", booking.to_dict())
+    return jsonify({"ok": True, "booking": booking.to_dict()})
 
 
 # ---------------------------------------------------------------------------

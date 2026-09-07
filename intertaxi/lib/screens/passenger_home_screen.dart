@@ -367,28 +367,11 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
       _silentRefreshResults();
     });
 
-    // Defer all heavy computations until after the first frame to prevent ANR
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-
-      try {
-        // Load driving route geometry and map state
-
-        await _loadDrivingRoute();
-
-        if (!mounted) return;
-
-        _focusMapOnRoute();
-      } catch (_) {
-        // Silently fail and continue — route will render as straight line
-      } finally {
-        // Mark loading complete
-
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
+    // Keep startup independent from map/network work. Route geometry is
+    // loaded when the user opens the map tab, so a slow routing service cannot
+    // block the passenger home screen or trigger an Android ANR.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _isLoading = false);
     });
   }
 

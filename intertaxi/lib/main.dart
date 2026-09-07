@@ -2315,6 +2315,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   final List<Map<String, dynamic>> _passengerMessages = [];
   StreamSubscription<Map<String, dynamic>>? _passengerBookedSubscription;
   StreamSubscription<Map<String, dynamic>>? _tripUpdatedSubscription;
+  Timer? _bookingRefreshTimer;
 
   @override
   void initState() {
@@ -2341,9 +2342,21 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     final savedMessages = await ApiService.fetchDriverBookings(
       widget.driverPhone,
     );
-    if (!mounted) return;
+    _mergeDriverBookings(savedMessages);
+    _bookingRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _refreshDriverBookings();
+    });
+  }
+
+  Future<void> _refreshDriverBookings() async {
+    final bookings = await ApiService.fetchDriverBookings(widget.driverPhone);
+    _mergeDriverBookings(bookings);
+  }
+
+  void _mergeDriverBookings(List<Map<String, dynamic>> bookings) {
+    if (!mounted || bookings.isEmpty) return;
     setState(() {
-      for (final message in savedMessages.reversed) {
+      for (final message in bookings.reversed) {
         final messageId = message['id']?.toString();
         if (messageId == null ||
             !_passengerMessages.any(
@@ -2378,6 +2391,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     WidgetsBinding.instance.removeObserver(this);
     _passengerBookedSubscription?.cancel();
     _tripUpdatedSubscription?.cancel();
+    _bookingRefreshTimer?.cancel();
     SocketService.instance.disconnect();
     super.dispose();
   }
