@@ -275,13 +275,17 @@ def delete_trip_rest(trip_id: str):
 
 @app.route("/api/bookings", methods=["GET"])
 def get_bookings():
-    """Returns durable passenger bookings for one driver."""
+    """Returns durable bookings for a driver or passenger."""
     driver_id = request.args.get("driver_id", "").strip()
-    if not driver_id:
+    passenger_phone = request.args.get("passenger_phone", "").strip()
+    if not driver_id and not passenger_phone:
         return jsonify({"bookings": []})
-    bookings = Booking.query.filter_by(driver_id=driver_id).order_by(
-        Booking.created_at.desc()
-    ).all()
+    query = Booking.query
+    if driver_id:
+        query = query.filter_by(driver_id=driver_id)
+    if passenger_phone:
+        query = query.filter_by(passenger_phone=passenger_phone)
+    bookings = query.order_by(Booking.created_at.desc()).all()
     return jsonify({"bookings": [booking.to_dict() for booking in bookings]})
 
 
@@ -291,10 +295,16 @@ def _create_booking(payload):
     trip = db.session.get(Trip, trip_key) if trip_key else None
     if trip is None:
         return None, ("Trip not found", 404)
-    if trip.status != "active" or trip.available_seats <= 0:
+    try:
+        requested_seats = int(payload.get("requested_seats", 1))
+    except (TypeError, ValueError):
+        return None, ("Invalid seat count", 400)
+    if requested_seats < 1:
+        return None, ("Invalid seat count", 400)
+    if trip.status != "active" or trip.available_seats < requested_seats:
         return None, ("No seats available", 409)
 
-    trip.available_seats -= 1
+    trip.available_seats -= requested_seats
     if trip.available_seats == 0:
         trip.status = "booked"
     booking = Booking(

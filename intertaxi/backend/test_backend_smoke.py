@@ -155,14 +155,28 @@ passenger_socket.get_received()
 trip_for_booking = client.get("/api/trips?from=Кулоб&to=Душанбе").get_json()["trips"][0]
 passenger_socket.emit(
     "book_trip",
-    {"trip_id": trip_for_booking["id"], "passenger_name": "Passenger 1", "passenger_phone": "p1"},
+    {
+        "trip_id": trip_for_booking["id"],
+        "passenger_name": "Passenger 1",
+        "passenger_phone": "p1",
+        "requested_seats": 2,
+    },
 )
 passenger_events = passenger_socket.get_received()
 assert any(event["name"] == "booking_confirmed" and event["args"][0]["ok"] for event in passenger_events)
+updated_trip = next(
+    event["args"][0]
+    for event in passenger_events
+    if event["name"] == "trip_updated"
+)
+assert updated_trip["available_seats"] == 0
 driver_events = booking_socket.get_received()
 assert any(event["name"] == "passenger_booked" for event in driver_events)
 stored_bookings = client.get("/api/bookings?driver_id=d5").get_json()["bookings"]
 assert stored_bookings and stored_bookings[0]["passenger_name"] == "Passenger 1"
+passenger_bookings = client.get("/api/bookings?passenger_phone=p1").get_json()["bookings"]
+assert passenger_bookings and passenger_bookings[0]["passenger_phone"] == "p1"
+assert client.get("/api/trips?from=Кулоб&to=Душанбе").get_json()["trips"] == []
 print("book_trip -> acknowledgement, driver event, and durable booking (OK)")
 
 # 10) DELETE /api/trips/<string:trip_id> permanently removes the row
