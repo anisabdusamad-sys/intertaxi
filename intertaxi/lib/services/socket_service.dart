@@ -300,6 +300,8 @@ class SocketService {
       debugPrint('[SocketService] passenger_booked received: $data');
       if (data is Map<String, dynamic>) {
         _passengerBookedController.add(data);
+      } else if (data is Map) {
+        _passengerBookedController.add(Map<String, dynamic>.from(data));
       } else if (data is String) {
         try {
           _passengerBookedController.add(

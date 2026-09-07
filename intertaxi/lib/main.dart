@@ -2328,24 +2328,29 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   Future<void> _connectDriverMessages() async {
     _passengerBookedSubscription = SocketService.instance.onPassengerBooked
         .listen((message) {
-          if (message['driver_id']?.toString() != widget.driverPhone) return;
+          if (!_sameDriver(message['driver_id'])) return;
           if (!mounted) return;
-          setState(() => _passengerMessages.insert(0, message));
+          _mergeDriverBookings([message]);
         });
     _tripUpdatedSubscription = SocketService.instance.onTripUpdated.listen(
       (trip) => _applyUpdatedTripSeats(trip),
     );
+    await _refreshDriverBookings();
     await SocketService.instance.connect(
       userId: widget.driverPhone,
       role: 'driver',
     );
-    final savedMessages = await ApiService.fetchDriverBookings(
-      widget.driverPhone,
-    );
-    _mergeDriverBookings(savedMessages);
+    await _refreshDriverBookings();
     _bookingRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _refreshDriverBookings();
     });
+  }
+
+  bool _sameDriver(Object? value) {
+    String digits(String input) => input.replaceAll(RegExp(r'[^0-9]'), '');
+    final received = digits(value?.toString() ?? '');
+    final current = digits(widget.driverPhone);
+    return received.isNotEmpty && current.isNotEmpty && received == current;
   }
 
   Future<void> _refreshDriverBookings() async {
@@ -2401,6 +2406,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     final isOnline = state == AppLifecycleState.resumed;
     if (mounted && _isOnline != isOnline) {
       setState(() => _isOnline = isOnline);
+    }
+    if (state == AppLifecycleState.resumed) {
+      _refreshDriverBookings();
     }
   }
 
