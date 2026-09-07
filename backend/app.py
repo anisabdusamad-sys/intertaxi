@@ -415,6 +415,7 @@ def health():
     return {
         'status': 'ok',
         'active_trips': Trip.query.filter_by(status='active').count(),
+        'booking_notifications': 'durable-v2',
     }, 200
 
 
@@ -542,6 +543,10 @@ def handle_book_trip(data):
 
     # Broadcast updated trip to everyone so lists stay in sync
     emit('trip_updated', trip, broadcast=True)
+
+    # Return an acknowledgement for clients that use Socket.IO booking
+    # directly; REST clients already receive the persisted booking response.
+    return {'ok': True, 'booking': booking, 'trip': trip}
 
 
 # ---------------------------------------------------------------------------
